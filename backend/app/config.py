@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     secret_key: str = DEV_SECRET  # signs JWTs and HMACs verification codes
     # "<id>:<base64 32-byte key>,..." - highest id encrypts, all ids decrypt (rotation).
     data_encryption_keys: str = DEV_DATA_KEYS
-    frontend_origin: str = "http://localhost:3000"
+    frontend_origin: str = "http://localhost:3210"
     smtp_host: str = ""  # empty = dev outbox (console + dev_emails table)
     smtp_port: int = 587
     smtp_user: str = ""

@@ -21,9 +21,10 @@ Code = Field(pattern=r"^\d{6}$")
 
 
 class RegisterIn(BaseModel):
+    # Field order = form order, so validation errors are listed in the order the user sees them.
+    full_name: str = Field(min_length=1, max_length=120)
     email: EmailStr
     password: str = Password
-    full_name: str = Field(min_length=1, max_length=120)
     role: Literal["student", "guardian"]  # staff roles are invited by an administrator
     date_of_birth: date | None = None
     locale: Literal["en", "hi"] = "en"
