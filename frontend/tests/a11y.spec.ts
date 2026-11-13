@@ -22,10 +22,15 @@ const PUBLIC_PAGES = [
   "/reset-password?email=someone@example.com",
   "/settings",
   "/dev/outbox",
+  "/grievances/new",
+  "/track",
+  "/track?reference=GRV-DEMO-REVW-2222",
+  "/track?reference=GRV-NOPE-NOPE-NOPE",
+  "/grievances/submitted?ref=GRV-DEMO-RECV-2222",
 ];
 
 const PAGES_BY_ROLE: Record<RoleName, string[]> = {
-  administrator: ["/dashboard", "/admin/users", "/students", MINOR_STUDENT, "/provisions/overdue", "/compliance", "/approvals", "/audit"],
+  administrator: ["/dashboard", "/admin/users", "/students", MINOR_STUDENT, "/provisions/overdue", "/compliance", "/approvals", "/audit", "/grievances/escalated", "/escalation-settings"],
   nodal_officer: [
     "/dashboard",
     "/students",
@@ -39,7 +44,7 @@ const PAGES_BY_ROLE: Record<RoleName, string[]> = {
     "/approvals",
     "/audit",
   ],
-  grievance_officer: ["/dashboard"],
+  grievance_officer: ["/dashboard", "/grievances", "/grievances/3", "/escalation-settings"],
   support_staff: [
     "/dashboard",
     "/students",

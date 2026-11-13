@@ -21,18 +21,21 @@ STUDENT = {
 
 # Routes that are reachable without signing in. Everything else must depend on current_user.
 PUBLIC = {
-    "/health",
-    "/auth/register",
-    "/auth/resend",
-    "/auth/verify",
-    "/auth/login",
-    "/auth/password/forgot",
-    "/auth/password/reset",
-    "/dev/emails",
+    "GET /health",
+    "POST /auth/register",
+    "POST /auth/resend",
+    "POST /auth/verify",
+    "POST /auth/login",
+    "POST /auth/password/forgot",
+    "POST /auth/password/reset",
+    "GET /dev/emails",
     # File transfer: authorised by a short-lived single-purpose signed token, issued only after
     # an access check on an authenticated endpoint (see app/routers/files.py).
-    "/files",
-    "/files/{file_id}",
+    "POST /files",
+    "GET /files/{file_id}",
+    # Grievances can be raised and tracked without an account (GET /grievances is NOT public).
+    "POST /grievances",
+    "GET /grievances/track/{reference}",
 }
 
 
@@ -41,9 +44,19 @@ def _uses(dependant, fn) -> bool:
 
 
 def test_every_route_requires_auth_unless_allowlisted():
-    for route in app.routes:
-        if isinstance(route, APIRoute) and route.path not in PUBLIC:
-            assert _uses(route.dependant, current_user), f"{route.path} has no auth dependency"
+    seen = set()
+    # FastAPI nests included routers; flatten them to per-route contexts (full path + dependant).
+    routes = [r for r in app.routes if isinstance(r, APIRoute)]
+    for nested in app.routes:
+        if hasattr(nested, "effective_route_contexts"):
+            routes += list(nested.effective_route_contexts())
+    for route in routes:
+        for method in route.methods - {"HEAD"}:
+            key = f"{method} {route.path}"
+            seen.add(key)
+            if key not in PUBLIC:
+                assert _uses(route.dependant, current_user), f"{key} has no auth dependency"
+    assert PUBLIC <= seen, f"stale allowlist entries: {PUBLIC - seen}"
 
 
 def test_register_verify_login(client, db, last_code):

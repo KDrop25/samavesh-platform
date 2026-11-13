@@ -29,6 +29,13 @@ def fast_scrypt(monkeypatch):
     monkeypatch.setitem(security.SCRYPT, "n", 2**4)
 
 
+@pytest.fixture(autouse=True)
+def fresh_rate_limits():
+    from app.routers.grievances import _hits
+
+    _hits.clear()
+
+
 @pytest.fixture
 def engine():
     # CI sets TEST_DATABASE_URL to Postgres to prove the same code runs on both databases.

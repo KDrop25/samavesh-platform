@@ -13,6 +13,7 @@ const NOTICES: Record<string, string> = {
   plan_approved: "plans.approved",
   plan_rejected: "plans.rejected",
   plan_ended: "plans.ended",
+  holiday_removed: "escalation.holidayRemoved",
   evidence_removed: "evidence.removed",
   item_deleted: "compliance.deleted",
 };

@@ -14,6 +14,8 @@ from app import models  # noqa: F401  (registers every table)
 from app.config import get_settings
 from app.db import Base, engine, utcnow
 from app.models.compliance import ComplianceItem
+from app.models.grievance import Grievance, GrievanceEvent
+from app.routers.grievances import flag_overdue_grievances
 from app.models.plan import AccommodationPlan, PlanDecision, PlanItem, PlanStatus, ProvisionLog, Term
 from app.models.student import GuardianLink, StaffAssignment, StudentProfile
 from app.models.user import Role, User
@@ -101,6 +103,7 @@ def seed(db: Session) -> None:
     db.flush()
     seed_plans(db, asha, imran, staff, staff2, nodal)
     seed_compliance(db, nodal)
+    seed_grievances(db, users["grievance"], asha)
     db.commit()
 
 
@@ -201,6 +204,53 @@ def seed_compliance(db: Session, nodal: User) -> None:
                 updated_by=nodal.id,
             )
         )
+
+
+def seed_grievances(db: Session, officer: User, asha: User) -> None:
+    """Module 6: one grievance per status, plus one under review long enough to be auto-flagged.
+    Tracking references are fixed so the demo can type them in: GRV-DEMO-<STATE>-2222."""
+    db.info["actor"] = (None, "complainant")
+    now = utcnow()
+    cases = [
+        # (reference, anonymous, subject, status path with days ago, public note on last step)
+        ("GRV-DEMO-RECV-2222", True, "Lecture slides are not screen-reader accessible",
+         [("received", 2)], None),
+        ("GRV-DEMO-REVW-2222", False, "Scribe did not arrive for the mid-semester paper",
+         [("received", 9), ("under_review", 7)], "Examination cell has been asked to respond."),
+        ("GRV-DEMO-LATE-2222", True, "Ramp to the library is blocked by furniture",
+         [("received", 40), ("under_review", 38)], "Estate office is arranging a site visit."),
+        ("GRV-DEMO-DONE-2222", False, "Hostel lift out of order for three weeks",
+         [("received", 30), ("under_review", 28), ("resolved", 10)], "Lift repaired and inspected."),
+        ("GRV-DEMO-ESCL-2222", True, "Request for extra time was refused without a reason",
+         [("received", 25), ("under_review", 22), ("escalated", 5)], "Referred to the Registrar."),
+    ]
+    for reference, anonymous, subject, path, note in cases:
+        grievance = Grievance(
+            reference=reference,
+            is_anonymous=anonymous,
+            category="examination" if "paper" in subject or "time" in subject else "physical_accessibility",
+            subject=subject,
+            description=subject + ". Details were shared with the grievance officer.",
+            status=path[-1][0],
+            complainant_name=None if anonymous else asha.full_name,
+            complainant_user_id=None if anonymous else asha.id,
+            contact_email=None if anonymous else asha.email,
+        )
+        db.add(grievance)
+        db.flush()
+        for status, days_ago in path:
+            db.add(
+                GrievanceEvent(
+                    grievance_id=grievance.id,
+                    status=status,
+                    actor_id=None if status == "received" else officer.id,
+                    public_note=note if status == path[-1][0] and status != "received" else None,
+                    created_at=now - timedelta(days=days_ago),
+                )
+            )
+    db.flush()
+    flag_overdue_grievances(db)  # marks GRV-DEMO-LATE as flagged: 38 calendar days is over 15 working days
+    db.info["actor"] = (None, "system")
 
 
 if __name__ == "__main__":

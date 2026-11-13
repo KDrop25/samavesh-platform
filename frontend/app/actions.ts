@@ -252,6 +252,48 @@ export async function endPlan(studentId: number, planId: number): Promise<FormSt
   redirect(withNotice(`/students/${studentId}/plans`, "plan_ended"));
 }
 
+// ---- Grievances ----
+
+export async function submitGrievance(_: FormState, form: FormData): Promise<FormState> {
+  const t = await getT();
+  const body = { ...pick(form, ["category", "subject", "description", "complainant_name", "contact_email"]), anonymous: form.get("anonymous") === "yes" };
+  const result = await api<{ reference: string }>("/grievances", { method: "POST", body });
+  if (!result.ok) return failure(t, result, form);
+  redirect(`/grievances/submitted?ref=${encodeURIComponent(result.data.reference)}`);
+}
+
+export async function changeGrievanceStatus(id: number, _: FormState, form: FormData): Promise<FormState> {
+  const t = await getT();
+  const result = await api(`/grievances/${id}/status`, { method: "POST", body: pick(form, ["status", "public_note", "internal_note"]) });
+  if (!result.ok) return failure(t, result, form);
+  revalidatePath(`/grievances/${id}`);
+  return { ok: true, message: t("grievance.updated") };
+}
+
+export async function saveEscalationSettings(_: FormState, form: FormData): Promise<FormState> {
+  const t = await getT();
+  const body = { working_weekdays: form.getAll("working_weekdays").map(Number), escalation_working_days: Number(form.get("escalation_working_days")) };
+  const result = await api("/settings", { method: "PUT", body });
+  if (!result.ok) return failure(t, result, form);
+  revalidatePath("/escalation-settings");
+  return { ok: true, message: t("escalation.saved") };
+}
+
+export async function addHoliday(_: FormState, form: FormData): Promise<FormState> {
+  const t = await getT();
+  const result = await api("/holidays", { method: "POST", body: pick(form, ["day", "name"]) });
+  if (!result.ok) return failure(t, result, form);
+  revalidatePath("/escalation-settings");
+  return { ok: true, message: t("escalation.holidayAdded") };
+}
+
+export async function removeHoliday(id: number): Promise<FormState> {
+  const t = await getT();
+  const result = await api(`/holidays/${id}`, { method: "DELETE" });
+  if (!result.ok) return failure(t, result);
+  redirect(withNotice("/escalation-settings", "holiday_removed"));
+}
+
 export async function logProvision(studentId: number, itemId: number, _: FormState, form: FormData): Promise<FormState> {
   const t = await getT();
   const body = pick(form, ["provided_on", "notes"]);

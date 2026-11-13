@@ -44,6 +44,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   </li>
                 ))}
                 <li>
+                  <NavLink href="/grievances/new">{t("nav.raise")}</NavLink>
+                </li>
+                <li>
+                  <NavLink href="/track">{t("nav.track")}</NavLink>
+                </li>
+                <li>
                   <NavLink href="/settings">{t("nav.settings")}</NavLink>
                 </li>
                 {!user && (

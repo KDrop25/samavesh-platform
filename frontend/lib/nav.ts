@@ -25,7 +25,14 @@ export function sectionsFor(user: User): Section[] {
   if (user.role === "nodal_officer") {
     sections.push({ href: "/terms", label: "nav.terms", text: "dashboard.terms" });
   }
+  if (user.role === "grievance_officer") {
+    sections.push({ href: "/grievances", label: "nav.grievances", text: "dashboard.grievances" });
+  }
+  if (["grievance_officer", "administrator"].includes(user.role)) {
+    sections.push({ href: "/escalation-settings", label: "nav.escalation", text: "dashboard.escalation" });
+  }
   if (user.role === "administrator") {
+    sections.push({ href: "/grievances/escalated", label: "nav.escalated", text: "dashboard.escalated" });
     sections.push({ href: "/admin/users", label: "nav.users", text: "dashboard.users" });
   }
   return sections;

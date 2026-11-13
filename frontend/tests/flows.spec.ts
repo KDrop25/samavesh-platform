@@ -13,6 +13,56 @@ async function codeFromOutbox(page: Page, email: string): Promise<string> {
   return /\b\d{6}\b/.exec(text)![0];
 }
 
+test("anyone can raise a grievance anonymously and track it without signing in; only the officer sees identity", async ({ page }) => {
+  const subject = `Broken tactile paving ${Date.now()}`;
+  await page.goto("/grievances/new");
+  await page.getByLabel("Subject").fill(subject);
+  await page.getByLabel("What happened").fill("Tactile paving near Block B is broken.");
+  await page.getByLabel(/^Anonymous/).check();
+  await page.getByRole("button", { name: "Submit grievance" }).click();
+  await page.waitForURL("**/grievances/submitted?ref=**");
+  const reference = (await page.locator("strong").filter({ hasText: /^GRV-/ }).innerText()).trim();
+
+  // Track with the reference only (no session), in lower case.
+  await page.context().clearCookies();
+  await page.goto("/track");
+  await page.getByLabel("Tracking reference").fill(reference.toLowerCase());
+  await page.getByRole("button", { name: "Check status" }).click();
+  await expect(page.getByRole("region", { name: reference })).toContainText("Received");
+  await expect(page.locator("main")).not.toContainText("Tactile paving"); // no complaint text for the public
+  await page.getByLabel("Tracking reference").fill("GRV-ZZZZ-ZZZZ-ZZZZ");
+  await page.getByRole("button", { name: "Check status" }).click();
+  await expect(page.locator("main").getByRole("alert")).toContainText("No grievance matches that reference");
+
+  // The grievance officer moves it to under review with a public note.
+  await signIn(page, "grievance_officer");
+  await page.goto("/grievances");
+  await page.getByRole("row").filter({ hasText: subject }).getByRole("link").click();
+  await expect(page.getByText("Anonymous", { exact: true })).toBeVisible();
+  await page.getByLabel("New status").selectOption("under_review");
+  await page.getByLabel("Public note").fill("The estate office has been notified.");
+  await page.getByRole("button", { name: "Save status" }).click();
+  await expect(page.locator("main").getByRole("status").filter({ hasText: "status has been updated" })).toBeFocused();
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.waitForURL("**/login");
+
+  await page.goto(`/track?reference=${reference}`);
+  await expect(page.getByRole("region", { name: reference })).toContainText("The estate office has been notified.");
+
+  // A named demo grievance shows the complainant to the officer but not to the administrator.
+  await signIn(page, "grievance_officer");
+  await page.goto("/grievances/2");
+  await expect(page.getByText("Asha Verma")).toBeVisible();
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await signIn(page, "administrator");
+  await page.goto("/grievances/escalated");
+  await expect(page.locator("main")).toContainText("GRV-DEMO-ESCL-2222");
+  await expect(page.locator("main")).toContainText("GRV-DEMO-LATE-2222"); // auto-flagged after 15 working days
+  await expect(page.locator("main")).not.toContainText("Asha Verma");
+  await page.goto("/grievances");
+  await page.waitForURL("**/dashboard");
+});
+
 test("a submitted plan stays inactive until the nodal officer approves it, and the decision is logged", async ({ page }) => {
   const marker = `Approval flow ${Date.now()}`;
 
