@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { signIn } from "./helpers";
+import { ADULT_STUDENT, signIn } from "./helpers";
 
 /** End-to-end flows through the real UI and API. Each run uses fresh email addresses. */
 
@@ -12,6 +12,55 @@ async function codeFromOutbox(page: Page, email: string): Promise<string> {
   const text = await row.innerText();
   return /\b\d{6}\b/.exec(text)![0];
 }
+
+test("support staff draft and submit a plan, log a provision, and see planned versus delivered", async ({ page }) => {
+  await signIn(page, "support_staff");
+  await page.goto(`${ADULT_STUDENT}/plans`);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Accommodation plans for Asha Verma");
+
+  // Draft: an invalid interval is caught and explained, then the corrected plan is saved.
+  await page.getByRole("link", { name: "Draft a new plan" }).click();
+  await page.getByLabel("Start date").fill("2027-01-10");
+  await page.getByLabel("Review date").fill("2027-06-30");
+  const scribe = page.getByRole("group", { name: "Scribe" });
+  await scribe.getByLabel("Include in this plan").check();
+  await scribe.getByLabel("Scribe: Details").fill("Scribe for end-semester papers");
+  await scribe.getByLabel("Scribe: Expected every (number of days)").fill("900");
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(page.locator("main").getByRole("alert")).toContainText("Enter a whole number of days from 1 to 365");
+  await expect(scribe.getByLabel("Include in this plan")).toBeChecked(); // the form was not wiped
+  await scribe.getByLabel("Scribe: Expected every (number of days)").fill("45");
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await page.waitForURL("**/plans?saved=1");
+  await expect(page.locator("main").getByRole("status").first()).toHaveText("The plan has been saved as a draft.");
+
+  // Submit the newest draft: it is waiting for the nodal officer and is not active.
+  const draft = page.getByRole("region", { name: /^Plan \d+, version 1$/ }).filter({ hasText: "Draft – Not active" }).first();
+  await draft.getByRole("button", { name: /^Submit plan \d+ for approval$/ }).click();
+  await expect(page.locator("main").getByRole("status").filter({ hasText: "submitted to the nodal officer" })).toBeFocused();
+
+  // Log a provision against the approved, active plan.
+  const active = page.getByRole("region").filter({ hasText: "Approved – Active" }).first();
+  await active.getByText("Log a provision: Extra time").click();
+  await active.getByLabel("Notes").first().fill("Quiz 3");
+  await active.getByRole("button", { name: "Log provision" }).first().click();
+  await expect(page.locator("main").getByRole("status").filter({ hasText: "Provision logged." })).toBeFocused();
+
+  // Planned versus delivered for the current term.
+  const summary = page.getByRole("region", { name: "Planned versus delivered" });
+  await expect(summary.getByRole("table")).toContainText("Monsoon semester 2026");
+  await expect(summary.getByRole("row", { name: /Physical access/ })).toContainText("Not counted");
+});
+
+test("students and guardians can read plans but cannot draft or log anything", async ({ page }) => {
+  await signIn(page, "student");
+  await page.goto(`${ADULT_STUDENT}/plans`);
+  await expect(page.getByText("Approved – Active").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Draft a new plan" })).toHaveCount(0);
+  await expect(page.getByText(/^Log a provision/)).toHaveCount(0);
+  await page.goto(`${ADULT_STUDENT}/plans/edit`);
+  await page.waitForURL("**/dashboard");
+});
 
 test("an under-18 student's profile is blocked until consent is recorded, then created with a certificate", async ({ page }) => {
   const email = unique("minor");

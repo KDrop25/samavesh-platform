@@ -5,15 +5,18 @@ Grows with each module; demo logins are listed in the README.
 """
 
 import sys
-from datetime import date
+from datetime import date, timedelta
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import models  # noqa: F401  (registers every table)
 from app.config import get_settings
 from app.db import Base, engine, utcnow
+from app.models.plan import AccommodationPlan, PlanItem, PlanStatus, ProvisionLog, Term
 from app.models.student import GuardianLink, StaffAssignment, StudentProfile
 from app.models.user import Role, User
+from app.rules.dates import today
 from app.security import hash_password
 
 DEMO_PASSWORD = "Samavesh-Demo-2026"
@@ -94,7 +97,61 @@ def seed(db: Session) -> None:
             communication_preference="Phone call or WhatsApp message.",
         )
     )
+    db.flush()
+    seed_plans(db, asha, imran, staff, staff2)
     db.commit()
+
+
+def seed_plans(db: Session, asha: User, imran: User, staff: User, staff2: User) -> None:
+    """Module 3. Dates are relative to today so the demo always shows one overdue item."""
+    now = today()
+    ago = lambda days: now - timedelta(days=days)  # noqa: E731
+    db.add(Term(name="Monsoon semester 2026", start_date=ago(110), end_date=now + timedelta(days=40)))
+    db.add(Term(name="Summer term 2026", start_date=ago(200), end_date=ago(125)))
+
+    profile_of = lambda user: db.scalar(select(StudentProfile.id).where(StudentProfile.student_id == user.id))  # noqa: E731
+
+    # Asha: an approved, active plan. Extra time is overdue; accessible material is on track.
+    plan = AccommodationPlan(
+        profile_id=profile_of(asha),
+        status=PlanStatus.approved,
+        start_date=ago(100),
+        review_date=now + timedelta(days=80),
+        notes="Agreed with Asha and her course coordinator at the start of the semester.",
+        drafted_by=staff.id,
+        submitted_at=utcnow() - timedelta(days=102),
+    )
+    db.add(plan)
+    db.flush()
+    extra_time = PlanItem(plan_id=plan.id, type="extra_time", details="20 minutes extra per hour in written tests.", interval_days=30)
+    material = PlanItem(plan_id=plan.id, type="accessible_material", details="Lecture notes as tagged PDF, 18pt.", interval_days=14)
+    seating = PlanItem(plan_id=plan.id, type="physical_access", details="Reserved front-row seat in all lecture halls.")
+    db.add_all([extra_time, material, seating])
+    db.flush()
+    for item, days, note in (
+        (extra_time, 62, "Class test 1"),
+        (extra_time, 32, "Mid-semester examination"),
+        (material, 75, "Unit 1 notes"),
+        (material, 47, "Unit 2 notes"),
+        (material, 19, "Unit 3 notes"),
+        (material, 5, "Unit 4 notes"),
+    ):
+        db.add(ProvisionLog(plan_item_id=item.id, provided_on=ago(days), staff_id=staff.id, notes=note))
+
+    # Imran: a plan submitted and waiting for the nodal officer's decision.
+    pending = AccommodationPlan(
+        profile_id=profile_of(imran),
+        status=PlanStatus.submitted,
+        start_date=now + timedelta(days=3),
+        review_date=now + timedelta(days=150),
+        notes="Requested ahead of the end-semester examinations.",
+        drafted_by=staff2.id,
+        submitted_at=utcnow() - timedelta(days=1),
+    )
+    db.add(pending)
+    db.flush()
+    db.add(PlanItem(plan_id=pending.id, type="scribe", details="Scribe for all three-hour written papers.", interval_days=45))
+    db.add(PlanItem(plan_id=pending.id, type="transport", details="Campus shuttle pick-up from Hostel 4."))
 
 
 if __name__ == "__main__":

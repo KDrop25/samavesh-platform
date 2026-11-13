@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.errors import AppError
-from app.routers import admin, auth, dev, files, students
+from app.routers import admin, auth, dev, files, plans, students
 
 settings = get_settings()
 app = FastAPI(
@@ -27,6 +27,7 @@ def health():
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(students.router)
+app.include_router(plans.router)
 app.include_router(files.router)
 if not settings.is_prod:
     app.include_router(dev.router)  # dev outbox; never mounted in production

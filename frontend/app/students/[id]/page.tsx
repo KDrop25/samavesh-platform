@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   assignStaff,
@@ -97,6 +98,9 @@ export default async function StudentPage({ params, searchParams }: PageProps<"/
   return (
     <>
       <h1>{student.full_name}</h1>
+      <p className="mb-6">
+        <Link href={`/students/${student.id}/plans`}>{t("plans.link")}</Link>
+      </p>
       {query.uploaded && <Notice>{t("certificate.uploaded")}</Notice>}
       {uploadError && <Notice error>{t(`error.${query.upload_error}`)}</Notice>}
 

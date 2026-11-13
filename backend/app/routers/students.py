@@ -9,6 +9,7 @@ from app.db import utcnow
 from app.deps import DB, CurrentUser, require_roles
 from app.errors import AppError
 from app.mailer import send_email
+from app.models.plan import AccommodationPlan
 from app.models.student import (
     RPWD_CATEGORIES,
     Consent,
@@ -312,6 +313,8 @@ def delete_profile(student_id: int, db: DB, user: CurrentUser):
     profile = get_profile(db, student_id)
     if not profile:
         raise AppError(404, "not_found")
+    if db.scalar(select(AccommodationPlan.id).where(AccommodationPlan.profile_id == profile.id)):
+        raise AppError(409, "profile_has_plans")  # plans and their provision history must stay intact
     if profile.certificate_file_id:
         certificate = db.get(StoredFile, profile.certificate_file_id)
         profile.certificate_file_id = None

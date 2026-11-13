@@ -14,6 +14,12 @@ export function sectionsFor(user: User): Section[] {
   if (["guardian", "support_staff", "nodal_officer", "administrator"].includes(user.role)) {
     sections.push({ href: "/students", label: "nav.students", text: "dashboard.students" });
   }
+  if (["support_staff", "nodal_officer", "administrator"].includes(user.role)) {
+    sections.push({ href: "/provisions/overdue", label: "nav.overdue", text: "dashboard.overdue" });
+  }
+  if (user.role === "nodal_officer") {
+    sections.push({ href: "/terms", label: "nav.terms", text: "dashboard.terms" });
+  }
   if (user.role === "administrator") {
     sections.push({ href: "/admin/users", label: "nav.users", text: "dashboard.users" });
   }

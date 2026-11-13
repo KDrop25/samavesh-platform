@@ -223,3 +223,16 @@ export function CheckboxGroup({
     </fieldset>
   );
 }
+
+/** A single labelled checkbox. Keeps its state when a failed form is shown again. */
+export function Checkbox({ name, label, defaultChecked }: { name: string; label: string; defaultChecked: boolean }) {
+  const { state, id: formId } = useContext(FormContext);
+  const id = `${formId}${name}`;
+  const checked = state.values ? name in state.values : defaultChecked;
+  return (
+    <div className="flex min-h-11 items-center gap-2">
+      <input key={String(checked)} type="checkbox" id={id} name={name} defaultChecked={checked} className="size-5 shrink-0" />
+      <label htmlFor={id}>{label}</label>
+    </div>
+  );
+}

@@ -25,12 +25,28 @@ const PUBLIC_PAGES = [
 ];
 
 const PAGES_BY_ROLE: Record<RoleName, string[]> = {
-  administrator: ["/dashboard", "/admin/users", "/students", MINOR_STUDENT],
-  nodal_officer: ["/dashboard", "/students", ADULT_STUDENT, MINOR_STUDENT],
+  administrator: ["/dashboard", "/admin/users", "/students", MINOR_STUDENT, "/provisions/overdue"],
+  nodal_officer: [
+    "/dashboard",
+    "/students",
+    ADULT_STUDENT,
+    MINOR_STUDENT,
+    `${ADULT_STUDENT}/plans`,
+    "/provisions/overdue",
+    "/terms",
+  ],
   grievance_officer: ["/dashboard"],
-  support_staff: ["/dashboard", "/students", ADULT_STUDENT, MINOR_STUDENT],
-  student: ["/dashboard", ADULT_STUDENT],
-  guardian: ["/dashboard", "/students", MINOR_STUDENT],
+  support_staff: [
+    "/dashboard",
+    "/students",
+    ADULT_STUDENT,
+    MINOR_STUDENT,
+    `${ADULT_STUDENT}/plans`,
+    `${ADULT_STUDENT}/plans/edit`,
+    "/provisions/overdue",
+  ],
+  student: ["/dashboard", ADULT_STUDENT, `${ADULT_STUDENT}/plans`],
+  guardian: ["/dashboard", "/students", MINOR_STUDENT, `${MINOR_STUDENT}/plans`],
 };
 
 test.describe("axe: public pages", () => {

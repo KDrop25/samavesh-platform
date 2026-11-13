@@ -32,23 +32,31 @@ function issueMessage(t: T, field: string, type: string, ctx?: Record<string, un
   return t("error.invalid");
 }
 
+/** Submitted values to echo back into a failed form. Never passwords, never React's own fields. */
+export function formValues(form: FormData): Record<string, string> {
+  return Object.fromEntries(
+    [...form.entries()].filter(
+      (entry): entry is [string, string] =>
+        typeof entry[1] === "string" && !entry[0].startsWith("$") && !entry[0].includes("password"),
+    ),
+  );
+}
+
 /** Turn an API failure into translated, field-level messages that say what is wrong and how to fix it. */
 export function failure(t: T, result: ApiFailure, form?: FormData): FormState {
-  const values = form
-    ? Object.fromEntries(
-        [...form.entries()].filter(
-          (entry): entry is [string, string] =>
-            typeof entry[1] === "string" && !entry[0].startsWith("$") && !entry[0].includes("password"),
-        ),
-      )
-    : undefined;
+  const values = form ? formValues(form) : undefined;
 
   const errors: Record<string, string> = {};
   for (const issue of result.detail ?? []) {
     // A model-level rule (e.g. students must give a date of birth) reports loc ["body"].
     const modelRule = /Value error, (\w+)_required/.exec(issue.msg)?.[1];
     const field = modelRule ?? String(issue.loc.at(-1));
-    const message = modelRule ? t("error.required") : issueMessage(t, field, issue.type, issue.ctx);
+    const ruleMessage = t(`error.rule.${modelRule}`); // specific wording where one exists
+    const message = modelRule
+      ? ruleMessage === `error.rule.${modelRule}`
+        ? t("error.required")
+        : ruleMessage
+      : issueMessage(t, field, issue.type, issue.ctx);
     errors[field] = `${t(`field.${field}`)}: ${message}`;
   }
   if (Object.keys(errors).length) return { errors, values };

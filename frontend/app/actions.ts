@@ -4,8 +4,9 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { api } from "@/lib/api";
+import { ACCOMMODATION_TYPES } from "@/lib/constants";
 import { preferenceCookie } from "@/lib/cookie-options";
-import { failure, pick, type FormState } from "@/lib/form";
+import { failure, formValues, pick, type FormState } from "@/lib/form";
 import { getLocale, getT, type Locale } from "@/lib/i18n";
 import { clearSession, setSession, type SessionPayload } from "@/lib/session";
 
@@ -178,4 +179,60 @@ export async function saveProfile(studentId: number, _: FormState, form: FormDat
   ]);
   const body = { ...text, disability_categories: form.getAll("disability_categories") };
   return studentAction(studentId, "/profile", { method: "PUT", body }, t("profile.saved"), form);
+}
+
+// ---- Accommodation plans, provision log, terms ----
+
+export async function savePlan(
+  studentId: number,
+  planId: number | null,
+  _: FormState,
+  form: FormData,
+): Promise<FormState> {
+  const t = await getT();
+  const errors: Record<string, string> = {};
+  const items = [];
+  for (const type of ACCOMMODATION_TYPES) {
+    if (!form.get(`include_${type}`)) continue;
+    const raw = String(form.get(`interval_${type}`) ?? "").trim();
+    const interval = raw === "" ? null : Number(raw);
+    if (interval !== null && !(Number.isInteger(interval) && interval >= 1 && interval <= 365)) {
+      errors[`interval_${type}`] = `${t(`type.${type}`)}: ${t("error.interval")}`;
+    }
+    items.push({ type, details: String(form.get(`details_${type}`) ?? "").trim() || null, interval_days: interval });
+  }
+  if (Object.keys(errors).length) return { errors, values: formValues(form) };
+  if (items.length === 0) return { message: t("error.rule.items"), values: formValues(form) };
+
+  const body = { ...pick(form, ["start_date", "review_date", "notes"]), items };
+  const result = planId
+    ? await api(`/plans/${planId}`, { method: "PUT", body })
+    : await api(`/students/${studentId}/plans`, { method: "POST", body });
+  if (!result.ok) return failure(t, result, form);
+  redirect(`/students/${studentId}/plans?saved=1`);
+}
+
+export async function submitPlan(studentId: number, planId: number): Promise<FormState> {
+  const t = await getT();
+  const result = await api(`/plans/${planId}/submit`, { method: "POST" });
+  if (!result.ok) return failure(t, result);
+  revalidatePath(`/students/${studentId}/plans`);
+  return { ok: true, message: t("plans.submitted") };
+}
+
+export async function logProvision(studentId: number, itemId: number, _: FormState, form: FormData): Promise<FormState> {
+  const t = await getT();
+  const body = pick(form, ["provided_on", "notes"]);
+  const result = await api(`/plan-items/${itemId}/provisions`, { method: "POST", body });
+  if (!result.ok) return failure(t, result, form);
+  revalidatePath(`/students/${studentId}/plans`);
+  return { ok: true, message: t("provision.logged") };
+}
+
+export async function addTerm(_: FormState, form: FormData): Promise<FormState> {
+  const t = await getT();
+  const result = await api("/terms", { method: "POST", body: pick(form, ["name", "start_date", "end_date"]) });
+  if (!result.ok) return failure(t, result, form);
+  revalidatePath("/terms");
+  return { ok: true, message: t("terms.added") };
 }
