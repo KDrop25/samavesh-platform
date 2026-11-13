@@ -1,0 +1,18 @@
+name: daily-jobs
+
+on:
+  schedule:
+    - cron: "30 1 * * *" # 07:00 IST
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run reminders and escalation checks
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          JOBS_SECRET: ${{ secrets.JOBS_SECRET }}
+        run: |
+          curl --fail --silent --show-error -X POST "$API_URL/internal/jobs/run" \
+            -H "X-Jobs-Secret: $JOBS_SECRET"
