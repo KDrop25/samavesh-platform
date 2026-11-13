@@ -243,3 +243,31 @@ export async function addTerm(_: FormState, form: FormData): Promise<FormState> 
   revalidatePath("/terms");
   return { ok: true, message: t("terms.added") };
 }
+
+// ---- Compliance checklist (nodal officer) ----
+
+export async function saveComplianceItem(id: number | null, _: FormState, form: FormData): Promise<FormState> {
+  const t = await getT();
+  const body = pick(form, ["description", "source_obligation", "due_date", "status", "reason"]);
+  const result = id
+    ? await api(`/compliance/${id}`, { method: "PUT", body })
+    : await api("/compliance", { method: "POST", body });
+  if (!result.ok) return failure(t, result, form);
+  revalidatePath("/compliance");
+  if (id) revalidatePath(`/compliance/${id}`);
+  return { ok: true, message: t(id ? "compliance.saved" : "compliance.added") };
+}
+
+export async function deleteComplianceItem(id: number): Promise<FormState> {
+  const t = await getT();
+  const result = await api(`/compliance/${id}`, { method: "DELETE" });
+  if (!result.ok) return failure(t, result);
+  redirect(withNotice("/compliance", "item_deleted"));
+}
+
+export async function deleteEvidence(itemId: number, evidenceId: number): Promise<FormState> {
+  const t = await getT();
+  const result = await api(`/compliance/${itemId}/evidence/${evidenceId}`, { method: "DELETE" });
+  if (!result.ok) return failure(t, result);
+  redirect(withNotice(`/compliance/${itemId}`, "evidence_removed"));
+}

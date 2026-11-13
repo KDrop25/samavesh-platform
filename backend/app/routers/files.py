@@ -17,9 +17,11 @@ from sqlalchemy import select
 from app.config import get_settings
 from app.deps import DB, CurrentUser
 from app.errors import AppError
+from app.models.compliance import ComplianceEvidence, ComplianceItem
 from app.models.student import StoredFile, StudentProfile
-from app.models.user import User
+from app.models.user import Role, User
 from app.permissions import can_edit_profile, can_view_student, require_student_access
+from app.routers.compliance import COMPLIANCE_READERS
 from app.security import create_purpose_token, decode_purpose_token
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -31,8 +33,8 @@ UPLOAD_MINUTES, DOWNLOAD_MINUTES = 15, 1
 
 
 class UploadTokenIn(BaseModel):
-    purpose: Literal["certificate"]
-    ref_id: int  # certificate: the student's user id
+    purpose: Literal["certificate", "evidence"]
+    ref_id: int  # certificate: the student's user id; evidence: the compliance item id
     # Same-site path only: "/" then a non-slash, so "//host" and absolute URLs are rejected.
     return_to: str = Field(pattern=r"^/([\w\-.%][\w\-/?=&.%]*)?$", max_length=200)
 
@@ -45,6 +47,11 @@ def _check_upload_access(db, user: User, purpose: str, ref_id: int) -> None:
             raise AppError(403, "forbidden")
         if not profile:
             raise AppError(409, "profile_required")
+    elif purpose == "evidence":  # only the nodal officer maintains the compliance checklist
+        if user.role != Role.nodal_officer:
+            raise AppError(403, "forbidden")
+        if not db.get(ComplianceItem, ref_id):
+            raise AppError(404, "not_found")
 
 
 def _can_download(db, user: User, file: StoredFile) -> bool:
@@ -53,6 +60,8 @@ def _can_download(db, user: User, file: StoredFile) -> bool:
             select(StudentProfile.student_id).where(StudentProfile.certificate_file_id == file.id)
         )
         return student_id is not None and can_view_student(db, user, student_id)
+    if file.purpose == "evidence":
+        return user.role in COMPLIANCE_READERS
     return False
 
 
@@ -123,6 +132,8 @@ def upload(token: str, file: UploadFile, db: DB):
         if old:
             db.flush()
             db.delete(old)  # replaced: do not keep sensitive documents nobody can reach
+    else:
+        db.add(ComplianceEvidence(item_id=claims["ref"], file_id=stored.id, uploaded_by=user.id))
     db.commit()
     return _back(back, uploaded="1")
 

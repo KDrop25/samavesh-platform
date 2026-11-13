@@ -16,6 +16,7 @@ export function sectionsFor(user: User): Section[] {
   }
   if (["support_staff", "nodal_officer", "administrator"].includes(user.role)) {
     sections.push({ href: "/provisions/overdue", label: "nav.overdue", text: "dashboard.overdue" });
+    sections.push({ href: "/compliance", label: "nav.compliance", text: "dashboard.compliance" });
   }
   if (user.role === "nodal_officer") {
     sections.push({ href: "/terms", label: "nav.terms", text: "dashboard.terms" });

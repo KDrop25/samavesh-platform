@@ -25,7 +25,7 @@ const PUBLIC_PAGES = [
 ];
 
 const PAGES_BY_ROLE: Record<RoleName, string[]> = {
-  administrator: ["/dashboard", "/admin/users", "/students", MINOR_STUDENT, "/provisions/overdue"],
+  administrator: ["/dashboard", "/admin/users", "/students", MINOR_STUDENT, "/provisions/overdue", "/compliance"],
   nodal_officer: [
     "/dashboard",
     "/students",
@@ -34,6 +34,8 @@ const PAGES_BY_ROLE: Record<RoleName, string[]> = {
     `${ADULT_STUDENT}/plans`,
     "/provisions/overdue",
     "/terms",
+    "/compliance",
+    "/compliance/2",
   ],
   grievance_officer: ["/dashboard"],
   support_staff: [
@@ -44,6 +46,7 @@ const PAGES_BY_ROLE: Record<RoleName, string[]> = {
     `${ADULT_STUDENT}/plans`,
     `${ADULT_STUDENT}/plans/edit`,
     "/provisions/overdue",
+    "/compliance",
   ],
   student: ["/dashboard", ADULT_STUDENT, `${ADULT_STUDENT}/plans`],
   guardian: ["/dashboard", "/students", MINOR_STUDENT, `${MINOR_STUDENT}/plans`],

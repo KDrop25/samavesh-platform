@@ -13,6 +13,54 @@ async function codeFromOutbox(page: Page, email: string): Promise<string> {
   return /\b\d{6}\b/.exec(text)![0];
 }
 
+test("the nodal officer maintains the compliance checklist with reasons and evidence; staff only read it", async ({ page }) => {
+  const obligation = `Accessible library catalogue ${Date.now()}`;
+  await signIn(page, "nodal_officer");
+  await page.goto("/compliance");
+  await expect(page.getByRole("region", { name: "Status summary" })).toContainText("Compliance rate");
+
+  // Anything other than "Compliant" needs a reason.
+  await page.getByLabel("Obligation", { exact: true }).fill(obligation);
+  await page.getByLabel("Source of the obligation").fill("Institutional accessibility policy");
+  await page.getByLabel("Due date").fill("2027-03-31");
+  await page.getByRole("combobox", { name: "Status" }).selectOption("not_compliant");
+  await page.getByRole("button", { name: "Add item" }).click();
+  await expect(page.locator("main").getByRole("alert")).toContainText("Give a reason when the status is not Compliant");
+  await page.getByLabel(/^Reason/).fill("Catalogue vendor has not delivered the accessible version.");
+  await page.getByRole("button", { name: "Add item" }).click();
+  await expect(page.locator("main").getByRole("status").filter({ hasText: "Checklist item added." })).toBeFocused();
+
+  // Open the new item, attach evidence, then mark it compliant.
+  const row = page.getByRole("row").filter({ hasText: obligation });
+  await expect(row).toContainText("Not compliant");
+  await row.getByRole("link", { name: /^Edit item/ }).click();
+  await page.getByLabel("Choose an evidence file").setInputFiles({
+    name: "vendor-letter.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4 vendor letter"),
+  });
+  await page.getByRole("button", { name: "Upload evidence" }).click();
+  await expect(page.locator("main").getByRole("status").filter({ hasText: "evidence file has been uploaded" })).toBeFocused();
+  await expect(page.getByRole("link", { name: "Download vendor-letter.pdf" })).toBeVisible();
+  await page.getByRole("combobox", { name: "Status" }).selectOption("compliant");
+  await page.getByLabel(/^Reason/).fill("");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator("main").getByRole("status").filter({ hasText: "Checklist item saved." })).toBeFocused();
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.waitForURL("**/login");
+
+  // Support staff see the checklist and evidence but cannot change anything.
+  await signIn(page, "support_staff");
+  await page.goto("/compliance");
+  const readOnly = page.getByRole("row").filter({ hasText: obligation });
+  await expect(readOnly).toContainText("Compliant");
+  await expect(readOnly.getByRole("link", { name: "Download vendor-letter.pdf" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Edit item/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Add item" })).toHaveCount(0);
+  await page.goto("/compliance/1");
+  await page.waitForURL("**/dashboard");
+});
+
 test("support staff draft and submit a plan, log a provision, and see planned versus delivered", async ({ page }) => {
   await signIn(page, "support_staff");
   await page.goto(`${ADULT_STUDENT}/plans`);

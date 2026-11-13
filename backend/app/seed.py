@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app import models  # noqa: F401  (registers every table)
 from app.config import get_settings
 from app.db import Base, engine, utcnow
+from app.models.compliance import ComplianceItem
 from app.models.plan import AccommodationPlan, PlanItem, PlanStatus, ProvisionLog, Term
 from app.models.student import GuardianLink, StaffAssignment, StudentProfile
 from app.models.user import Role, User
@@ -99,6 +100,7 @@ def seed(db: Session) -> None:
     )
     db.flush()
     seed_plans(db, asha, imran, staff, staff2)
+    seed_compliance(db, nodal)
     db.commit()
 
 
@@ -152,6 +154,45 @@ def seed_plans(db: Session, asha: User, imran: User, staff: User, staff2: User) 
     db.flush()
     db.add(PlanItem(plan_id=pending.id, type="scribe", details="Scribe for all three-hour written papers.", interval_days=45))
     db.add(PlanItem(plan_id=pending.id, type="transport", details="Campus shuttle pick-up from Hostel 4."))
+
+
+def seed_compliance(db: Session, nodal: User) -> None:
+    """Module 4. Illustrative checklist drawn from the RPwD Act 2016 and UGC guidance.
+    Section references are for demonstration and must be verified against the official text."""
+    now = today()
+    verify = " (verify against official text)"
+    items = [
+        # (description, source, due in days, status, reason)
+        ("Admit students with disabilities without discrimination and provide equal opportunities for sports and recreation.",
+         "RPwD Act 2016, s.16", 120, "compliant", None),
+        ("Make the campus, buildings and facilities accessible, including ramps, lifts and accessible toilets in every block.",
+         "RPwD Act 2016, s.16 and s.45", -12, "partially", "Lift in Block C is not yet commissioned; ramps and toilets are complete."),
+        ("Provide reasonable accommodation and individualised support, including scribes and extra time in examinations.",
+         "RPwD Act 2016, s.17; examination guidelines for persons with benchmark disabilities, 2018", 5, "partially",
+         "Scribe panel is in place; the extra-time policy is awaiting Academic Council approval."),
+        ("Reserve not less than five per cent of seats for persons with benchmark disabilities and allow five years' relaxation in the upper age limit.",
+         "RPwD Act 2016, s.32", 200, "compliant", None),
+        ("Publish an equal opportunity policy and register it with the competent authority.",
+         "RPwD Act 2016, s.21", 30, "not_compliant", "Draft policy is with the Registrar for review."),
+        ("Appoint a grievance redressal officer and publish how grievances can be lodged.",
+         "RPwD Act 2016, s.23", 90, "compliant", None),
+        ("Make the institution's website and learning portal conform to accessibility standards (WCAG 2.1 Level AA / GIGW).",
+         "RPwD Act 2016, s.42 and s.46; GIGW", 60, "partially", "Main website audited; the learning portal audit is scheduled."),
+        ("Provide hostel transport adapted for wheelchair users.",
+         "UGC accessibility guidelines for higher education institutions", 365, "not_applicable",
+         "The campus is fully residential and hostels are within 300 metres of all academic blocks."),
+    ]
+    for description, source, due_in, status, reason in items:
+        db.add(
+            ComplianceItem(
+                description=description,
+                source_obligation=source + verify,
+                due_date=now + timedelta(days=due_in),
+                status=status,
+                reason=reason,
+                updated_by=nodal.id,
+            )
+        )
 
 
 if __name__ == "__main__":

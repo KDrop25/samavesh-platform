@@ -9,10 +9,9 @@ import {
   saveProfile,
 } from "@/app/actions";
 import { CheckboxGroup, Field, Form } from "@/components/Form";
-import { Notice } from "@/components/Notice";
-import { PageNotice } from "@/components/PageNotice";
+import { PageNotice, UploadNotice } from "@/components/PageNotice";
+import { UploadForm } from "@/components/UploadForm";
 import { api } from "@/lib/api";
-import { API_PUBLIC_URL } from "@/lib/config";
 import { formatDate, getLocale, getT, titled } from "@/lib/i18n";
 import { requireUser } from "@/lib/session";
 
@@ -41,7 +40,6 @@ const RPWD_CATEGORIES = [
   "acid_attack_victim",
   "parkinsons_disease",
 ];
-const UPLOAD_ERRORS = ["file_missing", "file_too_large", "file_type"];
 
 type Profile = {
   enrollment_no: string | null;
@@ -91,7 +89,6 @@ export default async function StudentPage({ params, searchParams }: PageProps<"/
   const assignable = (staffList?.ok ? staffList.data : []).filter(
     (member) => !staff.some((assigned) => assigned.staff_id === member.id),
   );
-  const uploadError = typeof query.upload_error === "string" && UPLOAD_ERRORS.includes(query.upload_error);
   const formLabels = { pendingLabel: t("form.pending"), errorTitle: t("form.errorSummary") };
   const optional = t("form.optional");
   const shown = (value: string | number | null) => (value === null || value === "" ? t("profile.notProvided") : value);
@@ -103,8 +100,7 @@ export default async function StudentPage({ params, searchParams }: PageProps<"/
         <Link href={`/students/${student.id}/plans`}>{t("plans.link")}</Link>
       </p>
       <PageNotice query={query} />
-      {query.uploaded && <Notice>{t("certificate.uploaded")}</Notice>}
-      {uploadError && <Notice error>{t(`error.${query.upload_error}`)}</Notice>}
+      <UploadNotice query={query} success="certificate.uploaded" />
 
       <section aria-labelledby="details-title" className="mb-10">
         <h2 id="details-title">{t("student.details")}</h2>
@@ -294,37 +290,12 @@ export default async function StudentPage({ params, searchParams }: PageProps<"/
             <p>{t("certificate.none")}</p>
           )}
           {upload?.ok && (
-            // A plain multipart form posted straight to the API: works without JavaScript, and the
-            // 10 MB file does not pass through the Next.js host. The API redirects back here.
-            <form
-              action={`${API_PUBLIC_URL}/files?token=${upload.data.token}`}
-              method="post"
-              encType="multipart/form-data"
-              className="mt-6 flex max-w-md flex-col gap-4"
-            >
-              <div>
-                <label htmlFor="file" className="mb-1 block font-semibold">
-                  {t("certificate.upload.label")}
-                </label>
-                <p id="file-hint" className="mb-1 text-muted">
-                  {t("certificate.upload.hint")}
-                </p>
-                <input
-                  id="file"
-                  name="file"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                  required
-                  aria-describedby="file-hint"
-                  className="input"
-                />
-              </div>
-              <div>
-                <button type="submit" className="btn">
-                  {t("certificate.upload.submit")}
-                </button>
-              </div>
-            </form>
+            <UploadForm
+              token={upload.data.token}
+              label={t("certificate.upload.label")}
+              hint={t("certificate.upload.hint")}
+              submit={t("certificate.upload.submit")}
+            />
           )}
         </section>
       )}
