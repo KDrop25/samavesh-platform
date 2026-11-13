@@ -10,6 +10,7 @@ import {
 } from "@/app/actions";
 import { CheckboxGroup, Field, Form } from "@/components/Form";
 import { Notice } from "@/components/Notice";
+import { PageNotice } from "@/components/PageNotice";
 import { api } from "@/lib/api";
 import { API_PUBLIC_URL } from "@/lib/config";
 import { formatDate, getLocale, getT, titled } from "@/lib/i18n";
@@ -101,6 +102,7 @@ export default async function StudentPage({ params, searchParams }: PageProps<"/
       <p className="mb-6">
         <Link href={`/students/${student.id}/plans`}>{t("plans.link")}</Link>
       </p>
+      <PageNotice query={query} />
       {query.uploaded && <Notice>{t("certificate.uploaded")}</Notice>}
       {uploadError && <Notice error>{t(`error.${query.upload_error}`)}</Notice>}
 
@@ -129,7 +131,7 @@ export default async function StudentPage({ params, searchParams }: PageProps<"/
                 </span>
                 {can.manage_guardians && (
                   <Form
-                    action={removeGuardian.bind(null, student.id, guardian.id, guardian.guardian_email)}
+                    action={removeGuardian.bind(null, student.id, guardian.id)}
                     submitLabel={t("guardians.remove", { email: guardian.guardian_email })}
                     secondary
                     {...formLabels}
@@ -204,7 +206,7 @@ export default async function StudentPage({ params, searchParams }: PageProps<"/
                 <span>{member.full_name}</span>
                 {can.assign_staff && (
                   <Form
-                    action={endAssignment.bind(null, student.id, member.assignment_id, member.full_name)}
+                    action={endAssignment.bind(null, student.id, member.assignment_id)}
                     submitLabel={t("staff.end", { name: member.full_name })}
                     secondary
                     {...formLabels}

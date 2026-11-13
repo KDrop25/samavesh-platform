@@ -121,16 +121,27 @@ export async function setUserActive(id: number, name: string, active: boolean): 
 // ---- Students: guardians, consent, staff assignment, support profile ----
 
 /** Run an API call for a student page and turn the outcome into a form result. */
+/** URL of a page plus a one-off confirmation, shown by <PageNotice>. */
+function withNotice(path: string, code: string): string {
+  return `${path}?notice=${code}&n=${Date.now()}`;
+}
+
+/**
+ * Run an API call for a student page and turn the outcome into a form result.
+ * `success` is either a message shown inside the form, or `{ notice }` for actions whose form
+ * disappears on success - those redirect so the confirmation is shown by the page instead.
+ */
 async function studentAction(
   studentId: number,
   path: string,
   init: { method: string; body?: unknown },
-  success: string,
+  success: string | { notice: string },
   form?: FormData,
 ): Promise<FormState> {
   const t = await getT();
   const result = await api(`/students/${studentId}${path}`, init);
   if (!result.ok) return failure(t, result, form);
+  if (typeof success !== "string") redirect(withNotice(`/students/${studentId}`, success.notice));
   revalidatePath(`/students/${studentId}`);
   return { ok: true, message: success };
 }
@@ -142,16 +153,14 @@ export async function inviteGuardian(studentId: number, _: FormState, form: Form
   return studentAction(studentId, "/guardians", { method: "POST", body }, message, form);
 }
 
-export async function removeGuardian(studentId: number, linkId: number, email: string): Promise<FormState> {
-  const t = await getT();
-  return studentAction(studentId, `/guardians/${linkId}`, { method: "DELETE" }, t("guardians.removed", { email }));
+export async function removeGuardian(studentId: number, linkId: number): Promise<FormState> {
+  return studentAction(studentId, `/guardians/${linkId}`, { method: "DELETE" }, { notice: "guardian_removed" });
 }
 
 /** Guardian consenting in the app (no fields) or staff recording a paper consent (three fields). */
 export async function recordConsent(studentId: number, _: FormState, form: FormData): Promise<FormState> {
-  const t = await getT();
   const body = pick(form, ["consenting_person_name", "relationship", "consent_date"]);
-  return studentAction(studentId, "/consent", { method: "POST", body }, t("consent.saved"), form);
+  return studentAction(studentId, "/consent", { method: "POST", body }, { notice: "consent_saved" }, form);
 }
 
 export async function assignStaff(studentId: number, _: FormState, form: FormData): Promise<FormState> {
@@ -160,9 +169,8 @@ export async function assignStaff(studentId: number, _: FormState, form: FormDat
   return studentAction(studentId, "/assignments", { method: "POST", body }, t("staff.assigned"), form);
 }
 
-export async function endAssignment(studentId: number, assignmentId: number, name: string): Promise<FormState> {
-  const t = await getT();
-  return studentAction(studentId, `/assignments/${assignmentId}`, { method: "DELETE" }, t("staff.ended", { name }));
+export async function endAssignment(studentId: number, assignmentId: number): Promise<FormState> {
+  return studentAction(studentId, `/assignments/${assignmentId}`, { method: "DELETE" }, { notice: "assignment_ended" });
 }
 
 export async function saveProfile(studentId: number, _: FormState, form: FormData): Promise<FormState> {
@@ -209,15 +217,14 @@ export async function savePlan(
     ? await api(`/plans/${planId}`, { method: "PUT", body })
     : await api(`/students/${studentId}/plans`, { method: "POST", body });
   if (!result.ok) return failure(t, result, form);
-  redirect(`/students/${studentId}/plans?saved=1`);
+  redirect(withNotice(`/students/${studentId}/plans`, "plan_saved"));
 }
 
 export async function submitPlan(studentId: number, planId: number): Promise<FormState> {
   const t = await getT();
   const result = await api(`/plans/${planId}/submit`, { method: "POST" });
   if (!result.ok) return failure(t, result);
-  revalidatePath(`/students/${studentId}/plans`);
-  return { ok: true, message: t("plans.submitted") };
+  redirect(withNotice(`/students/${studentId}/plans`, "plan_submitted"));
 }
 
 export async function logProvision(studentId: number, itemId: number, _: FormState, form: FormData): Promise<FormState> {

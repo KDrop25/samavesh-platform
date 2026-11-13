@@ -144,7 +144,7 @@
   "guardians.status.invited": "invited, waiting for them to register",
   "guardians.status.active": "linked",
   "guardians.remove": "Remove {email}",
-  "guardians.removed": "{email} no longer has access.",
+  "guardians.removed": "That person no longer has access to this profile.",
   "guardians.invite.title": "Add a parent or guardian",
   "guardians.invite.intro": "They will be able to see this support profile and its accommodation plans.",
   "guardians.invite.submit": "Send invitation",
@@ -173,7 +173,7 @@
   "staff.assign.submit": "Assign",
   "staff.assigned": "Support staff assigned.",
   "staff.end": "End assignment of {name}",
-  "staff.ended": "{name} is no longer assigned.",
+  "staff.ended": "The assignment has been ended.",
 
   "profile.title": "Support profile",
   "profile.none": "No support profile has been created yet.",

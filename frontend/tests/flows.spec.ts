@@ -31,8 +31,9 @@ test("support staff draft and submit a plan, log a provision, and see planned ve
   await expect(scribe.getByLabel("Include in this plan")).toBeChecked(); // the form was not wiped
   await scribe.getByLabel("Scribe: Expected every (number of days)").fill("45");
   await page.getByRole("button", { name: "Save draft" }).click();
-  await page.waitForURL("**/plans?saved=1");
+  await page.waitForURL("**/plans?notice=plan_saved**");
   await expect(page.locator("main").getByRole("status").first()).toHaveText("The plan has been saved as a draft.");
+  await expect(page.locator("main").getByRole("status").first()).toBeFocused();
 
   // Submit the newest draft: it is waiting for the nodal officer and is not active.
   const draft = page.getByRole("region", { name: /^Plan \d+, version 1$/ }).filter({ hasText: "Draft – Not active" }).first();
@@ -96,6 +97,7 @@ test("an under-18 student's profile is blocked until consent is recorded, then c
   await page.getByRole("region", { name: "Consent" }).getByLabel("Relationship to the student").fill("Father");
   await page.getByLabel("Date consent was given").fill("2026-11-01");
   await page.getByRole("button", { name: "Record consent" }).click();
+  await expect(page.locator("main").getByRole("status").filter({ hasText: "Consent has been recorded." })).toBeFocused();
   await expect(page.getByText("Parent Example (Father) gave consent on 1 November 2026.")).toBeVisible();
 
   // 3. Create the profile: every disability field is optional.

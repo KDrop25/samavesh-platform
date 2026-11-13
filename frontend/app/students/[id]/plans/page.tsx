@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { logProvision, submitPlan } from "@/app/actions";
 import { Field, Form } from "@/components/Form";
-import { Notice } from "@/components/Notice";
+import { PageNotice } from "@/components/PageNotice";
 import { api } from "@/lib/api";
 import { formatDate, getLocale, getT, titled } from "@/lib/i18n";
 import { requireUser } from "@/lib/session";
@@ -64,7 +64,7 @@ export default async function PlansPage({ params, searchParams }: PageProps<"/st
       <p className="mb-6">
         <Link href={`/students/${id}`}>{t("plans.back", { name })}</Link>
       </p>
-      {query.saved && <Notice>{t("plans.saved")}</Notice>}
+      <PageNotice query={query} />
       <p className="mb-6">{t("plans.activeNote")}</p>
 
       {!has_profile && <p className="notice notice-error">{t("plans.noProfile")}</p>}

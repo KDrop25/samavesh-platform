@@ -144,7 +144,7 @@
   "guardians.status.invited": "आमंत्रित, उनके पंजीकरण की प्रतीक्षा है",
   "guardians.status.active": "जुड़े हुए",
   "guardians.remove": "{email} को हटाएँ",
-  "guardians.removed": "{email} की पहुँच अब समाप्त हो गई है।",
+  "guardians.removed": "उस व्यक्ति की इस प्रोफ़ाइल तक पहुँच अब समाप्त हो गई है।",
   "guardians.invite.title": "माता-पिता या अभिभावक जोड़ें",
   "guardians.invite.intro": "वे इस सहायता प्रोफ़ाइल और इसकी सुविधा योजनाओं को देख सकेंगे।",
   "guardians.invite.submit": "आमंत्रण भेजें",
@@ -173,7 +173,7 @@
   "staff.assign.submit": "नियुक्त करें",
   "staff.assigned": "सहायता कर्मचारी नियुक्त कर दिया गया है।",
   "staff.end": "{name} की नियुक्ति समाप्त करें",
-  "staff.ended": "{name} अब नियुक्त नहीं हैं।",
+  "staff.ended": "नियुक्ति समाप्त कर दी गई है।",
 
   "profile.title": "सहायता प्रोफ़ाइल",
   "profile.none": "अभी तक कोई सहायता प्रोफ़ाइल नहीं बनाई गई है।",
