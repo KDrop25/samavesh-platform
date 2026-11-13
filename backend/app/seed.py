@@ -14,6 +14,7 @@ from app import models  # noqa: F401  (registers every table)
 from app.config import get_settings
 from app.db import Base, engine, utcnow
 from app.models.compliance import ComplianceItem
+from app.jobs import run_jobs
 from app.models.grievance import Grievance, GrievanceEvent
 from app.routers.grievances import flag_overdue_grievances
 from app.models.plan import AccommodationPlan, PlanDecision, PlanItem, PlanStatus, ProvisionLog, Term
@@ -104,6 +105,7 @@ def seed(db: Session) -> None:
     seed_plans(db, asha, imran, staff, staff2, nodal)
     seed_compliance(db, nodal)
     seed_grievances(db, users["grievance"], asha)
+    run_jobs(db)  # produces the demo reminders (also commits)
     db.commit()
 
 

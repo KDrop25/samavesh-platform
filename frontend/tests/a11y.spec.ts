@@ -43,6 +43,7 @@ const PAGES_BY_ROLE: Record<RoleName, string[]> = {
     "/compliance/2",
     "/approvals",
     "/audit",
+    "/notifications",
   ],
   grievance_officer: ["/dashboard", "/grievances", "/grievances/3", "/escalation-settings"],
   support_staff: [
@@ -55,7 +56,7 @@ const PAGES_BY_ROLE: Record<RoleName, string[]> = {
     "/provisions/overdue",
     "/compliance",
   ],
-  student: ["/dashboard", ADULT_STUDENT, `${ADULT_STUDENT}/plans`],
+  student: ["/dashboard", ADULT_STUDENT, `${ADULT_STUDENT}/plans`, "/notifications"],
   guardian: ["/dashboard", "/students", MINOR_STUDENT, `${MINOR_STUDENT}/plans`],
 };
 

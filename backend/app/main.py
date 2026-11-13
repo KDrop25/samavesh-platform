@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.errors import AppError
-from app.routers import admin, audit, auth, compliance, dev, files, grievances, plans, students
+from app.routers import admin, audit, auth, compliance, dev, files, grievances, notifications, plans, students
 
 settings = get_settings()
 app = FastAPI(
@@ -31,6 +31,7 @@ app.include_router(plans.router)
 app.include_router(compliance.router)
 app.include_router(audit.router)
 app.include_router(grievances.router)
+app.include_router(notifications.router)
 app.include_router(files.router)
 if not settings.is_prod:
     app.include_router(dev.router)  # dev outbox; never mounted in production

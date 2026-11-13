@@ -13,6 +13,17 @@ async function codeFromOutbox(page: Page, email: string): Promise<string> {
   return /\b\d{6}\b/.exec(text)![0];
 }
 
+test("reminders reach the nodal officer in the app and can be marked as read", async ({ page }) => {
+  await signIn(page, "nodal_officer");
+  await page.goto("/notifications");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Notifications");
+  const reminder = page.getByRole("listitem").filter({ hasText: "due within 7 days" }).first();
+  await expect(reminder).toBeVisible();
+  await reminder.getByRole("button", { name: "Mark as read" }).click();
+  await expect(reminder).toContainText("Read");
+  await expect(reminder.getByRole("button", { name: "Mark as read" })).toHaveCount(0);
+});
+
 test("anyone can raise a grievance anonymously and track it without signing in; only the officer sees identity", async ({ page }) => {
   const subject = `Broken tactile paving ${Date.now()}`;
   await page.goto("/grievances/new");

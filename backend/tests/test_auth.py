@@ -36,6 +36,8 @@ PUBLIC = {
     # Grievances can be raised and tracked without an account (GET /grievances is NOT public).
     "POST /grievances",
     "GET /grievances/track/{reference}",
+    # Scheduler entry point: authorised by the shared JOBS_SECRET header, disabled when unset.
+    "POST /internal/jobs/run",
 }
 
 

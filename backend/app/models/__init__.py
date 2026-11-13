@@ -3,6 +3,7 @@
 from app.audit import AuditLog
 from app.models.compliance import ComplianceEvidence, ComplianceItem
 from app.models.grievance import Grievance, GrievanceEvent, Holiday, Setting
+from app.models.notification import Notification
 from app.models.plan import AccommodationPlan, PlanDecision, PlanItem, ProvisionLog, Term
 from app.models.student import Consent, GuardianLink, StaffAssignment, StoredFile, StudentProfile
 from app.models.user import DevEmail, EmailCode, Role, User
@@ -15,6 +16,7 @@ __all__ = [
     "Grievance",
     "GrievanceEvent",
     "Holiday",
+    "Notification",
     "PlanDecision",
     "Setting",
     "PlanItem",

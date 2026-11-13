@@ -294,6 +294,18 @@ export async function removeHoliday(id: number): Promise<FormState> {
   redirect(withNotice("/escalation-settings", "holiday_removed"));
 }
 
+// ---- Notifications ----
+
+export async function markNotificationRead(id: number) {
+  await api(`/notifications/${id}/read`, { method: "POST" });
+  revalidatePath("/", "layout");
+}
+
+export async function markAllNotificationsRead() {
+  await api("/notifications/read-all", { method: "POST" });
+  revalidatePath("/", "layout");
+}
+
 export async function logProvision(studentId: number, itemId: number, _: FormState, form: FormData): Promise<FormState> {
   const t = await getT();
   const body = pick(form, ["provided_on", "notes"]);

@@ -20,6 +20,7 @@ from app.models.plan import (
 )
 from app.models.student import StudentProfile
 from app.models.user import Role, User
+from app.notify import notify
 from app.permissions import OVERSIGHT, is_assigned_staff, require_student_access, visible_student_ids
 from app.routers.students import PROFILE_ROLES
 from app.rules.dates import today
@@ -285,12 +286,16 @@ def pending_approvals(db: DB):
 def decide_plan(plan_id: int, body: DecisionIn, db: DB, user: CurrentUser):
     """A plan is inactive until a nodal officer approves it. Every decision is logged with the
     approver, the time and the reason, in an insert-only table."""
-    plan, _ = _plan_for_user(db, user, plan_id)
+    plan, student_id = _plan_for_user(db, user, plan_id)
     if plan.status != PlanStatus.submitted:
         raise AppError(409, "plan_not_submitted")
     db.add(
         PlanDecision(plan_id=plan.id, decision=body.decision, approver_id=user.id, reason=(body.reason or "").strip() or None)
     )
+    kind = "plan_approved" if body.decision == "approved" else "plan_rejected"
+    link = f"/students/{student_id}/plans"
+    notify(db, plan.drafted_by, kind, link, plan_id=plan.id)  # the support staff member who drafted it
+    notify(db, student_id, kind, link, plan_id=plan.id)  # and the student
     if body.decision == "rejected":
         plan.status = PlanStatus.rejected
     else:

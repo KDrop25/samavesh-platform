@@ -23,6 +23,7 @@ from app.models.grievance import (
     Setting,
 )
 from app.models.user import Role, User
+from app.notify import notify, notify_contact
 from app.rules.dates import LOCAL_TZ, today
 from app.rules.working_days import (
     DEFAULT_ESCALATION_DAYS,
@@ -277,6 +278,11 @@ def change_status(grievance_id: int, body: StatusIn, db: DB, user: CurrentUser):
             actor_id=user.id,
         )
     )
+    link = f"/track?reference={grievance.reference}"
+    if grievance.complainant_user_id:
+        notify(db, grievance.complainant_user_id, "grievance_status", link, reference=grievance.reference, status=body.status)
+    elif grievance.contact_email:
+        notify_contact(db, grievance.contact_email)  # no account: the email only says "check the tracking page"
     db.commit()
     return {"status": grievance.status}
 

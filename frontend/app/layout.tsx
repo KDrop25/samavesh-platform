@@ -6,6 +6,7 @@ import { logout, setLanguage } from "@/app/actions";
 import { NavLink } from "@/components/NavLink";
 import { SessionTimeout } from "@/components/SessionTimeout";
 import { getLocale, getT } from "@/lib/i18n";
+import { api } from "@/lib/api";
 import { sectionsFor } from "@/lib/nav";
 import { getUser } from "@/lib/session";
 
@@ -19,6 +20,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const theme = store.get("theme")?.value;
   const textSize = store.get("text_size")?.value;
   const other = locale === "hi" ? "en" : "hi";
+  const inbox = user ? await api<{ unread: number }>("/notifications") : null;
+  const unread = inbox?.ok ? inbox.data.unread : 0;
 
   return (
     <html lang={locale} data-theme={theme} data-text-size={textSize} className="h-full">
@@ -49,6 +52,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <li>
                   <NavLink href="/track">{t("nav.track")}</NavLink>
                 </li>
+                {user && (
+                  <li>
+                    <NavLink href="/notifications">
+                      {t("nav.notifications")} <span aria-live="polite">({unread})</span>
+                    </NavLink>
+                  </li>
+                )}
                 <li>
                   <NavLink href="/settings">{t("nav.settings")}</NavLink>
                 </li>

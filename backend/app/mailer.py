@@ -62,6 +62,16 @@ TEMPLATES = {
             "या यदि खाता पहले से है तो {origin}/login पर साइन इन करें।",
         ),
     },
+    "grievance_update": {
+        "en": (
+            "Your Samavesh grievance has a new status",
+            "There has been an update to your grievance. Check its status at {origin}/track using your tracking reference.",
+        ),
+        "hi": (
+            "आपकी शिकायत की स्थिति बदली है",
+            "आपकी शिकायत में एक अपडेट है। ट्रैकिंग संदर्भ से {origin}/track पर स्थिति देखें।",
+        ),
+    },
     "update": {
         "en": ("You have an update on Samavesh", "Sign in to see it: {origin}/login"),
         "hi": ("समावेश पर आपके लिए एक अपडेट है", "देखने के लिए साइन इन करें: {origin}/login"),
