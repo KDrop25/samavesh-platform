@@ -48,6 +48,20 @@ TEMPLATES = {
             "{origin}/login पर साइन इन करें, या पासवर्ड भूल गए हों तो वहीं रीसेट करें।",
         ),
     },
+    "guardian_invite": {
+        "en": (
+            "You have been named as a parent or guardian on Samavesh",
+            "{student} has named you as their parent or guardian. "
+            "Create a guardian account with this email address at {origin}/register, "
+            "or sign in at {origin}/login if you already have one.",
+        ),
+        "hi": (
+            "आपको समावेश पर माता-पिता या अभिभावक के रूप में नामित किया गया है",
+            "{student} ने आपको अपने माता-पिता या अभिभावक के रूप में नामित किया है। "
+            "{origin}/register पर इसी ईमेल पते से अभिभावक खाता बनाएँ, "
+            "या यदि खाता पहले से है तो {origin}/login पर साइन इन करें।",
+        ),
+    },
     "update": {
         "en": ("You have an update on Samavesh", "Sign in to see it: {origin}/login"),
         "hi": ("समावेश पर आपके लिए एक अपडेट है", "देखने के लिए साइन इन करें: {origin}/login"),

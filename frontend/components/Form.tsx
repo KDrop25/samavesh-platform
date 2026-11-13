@@ -1,9 +1,14 @@
 "use client";
 
-import { createContext, useActionState, useContext, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useActionState, useContext, useEffect, useId, useRef, type ReactNode } from "react";
 import type { FormState } from "@/lib/form";
 
-const FormContext = createContext<FormState>({});
+/**
+ * `id` is unique per form and prefixes every control id inside it. A page can hold several
+ * forms with a field of the same name (two "relationship" fields, say); without the prefix
+ * their ids would collide and a label would point at the wrong input.
+ */
+const FormContext = createContext<{ state: FormState; id: string }>({ state: {}, id: "" });
 
 type Action = (state: FormState, form: FormData) => Promise<FormState>;
 
@@ -29,6 +34,7 @@ export function Form({
   children?: ReactNode;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
+  const id = useId();
   const summary = useRef<HTMLDivElement>(null);
   const errors = Object.entries(state.errors ?? {});
   const hasResult = Boolean(state.message) || errors.length > 0;
@@ -59,14 +65,14 @@ export function Form({
             <ul className="list-disc ps-5">
               {errors.map(([name, message]) => (
                 <li key={name}>
-                  <a href={`#${name}`}>{message}</a>
+                  <a href={`#${id}${name}`}>{message}</a>
                 </li>
               ))}
             </ul>
           )}
         </div>
       )}
-      <FormContext.Provider value={state}>{children}</FormContext.Provider>
+      <FormContext.Provider value={{ state, id }}>{children}</FormContext.Provider>
       <div>
         <button type="submit" className={secondary ? "btn btn-secondary" : "btn"} aria-disabled={pending}>
           {pending ? pendingLabel : submitLabel}
@@ -92,11 +98,12 @@ type FieldProps = {
 
 /** Labelled control with hint and error wired up through aria-describedby. */
 export function Field({ name, label, type = "text", hint, optional, options, defaultValue, ...rest }: FieldProps) {
-  const state = useContext(FormContext);
+  const { state, id: formId } = useContext(FormContext);
+  const id = `${formId}${name}`;
   const error = state.errors?.[name];
-  const describedBy = [hint && `${name}-hint`, error && `${name}-error`].filter(Boolean).join(" ") || undefined;
+  const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined;
   const shared = {
-    id: name,
+    id,
     name,
     className: "input",
     required: !optional,
@@ -109,16 +116,16 @@ export function Field({ name, label, type = "text", hint, optional, options, def
 
   return (
     <div>
-      <label htmlFor={name} className="mb-1 block font-semibold">
+      <label htmlFor={id} className="mb-1 block font-semibold">
         {label} {optional && <span className="font-normal text-muted">{optional}</span>}
       </label>
       {hint && (
-        <p id={`${name}-hint`} className="mb-1 text-muted">
+        <p id={`${id}-hint`} className="mb-1 text-muted">
           {hint}
         </p>
       )}
       {error && (
-        <p id={`${name}-error`} className="mb-1 font-semibold text-danger">
+        <p id={`${id}-error`} className="mb-1 font-semibold text-danger">
           {error}
         </p>
       )}
@@ -151,7 +158,7 @@ export function RadioGroup({
   options: { value: string; label: string; lang?: string }[];
   defaultValue: string;
 }) {
-  const state = useContext(FormContext);
+  const { state, id: formId } = useContext(FormContext);
   const selected = state.values?.[name] ?? defaultValue;
   return (
     <fieldset key={selected}>
@@ -160,17 +167,59 @@ export function RadioGroup({
         <div key={option.value} className="flex min-h-11 items-center gap-2">
           <input
             type="radio"
-            id={`${name}-${option.value}`}
+            id={`${formId}${name}-${option.value}`}
             name={name}
             value={option.value}
             defaultChecked={option.value === selected}
             className="size-5"
           />
-          <label htmlFor={`${name}-${option.value}`} lang={option.lang}>
+          <label htmlFor={`${formId}${name}-${option.value}`} lang={option.lang}>
             {option.label}
           </label>
         </div>
       ))}
+    </fieldset>
+  );
+}
+
+/** Multi-select as a group of checkboxes in a fieldset: every option is visible and keyboard-reachable. */
+export function CheckboxGroup({
+  name,
+  legend,
+  hint,
+  options,
+  defaultValues,
+}: {
+  name: string;
+  legend: string;
+  hint?: string;
+  options: { value: string; label: string }[];
+  defaultValues: string[];
+}) {
+  const id = `${useContext(FormContext).id}${name}`;
+  return (
+    <fieldset aria-describedby={hint ? `${id}-hint` : undefined}>
+      <legend className="mb-1 font-semibold">{legend}</legend>
+      {hint && (
+        <p id={`${id}-hint`} className="mb-1 text-muted">
+          {hint}
+        </p>
+      )}
+      <div className="grid gap-x-6 sm:grid-cols-2">
+        {options.map((option) => (
+          <div key={option.value} className="flex min-h-11 items-center gap-2">
+            <input
+              type="checkbox"
+              id={`${id}-${option.value}`}
+              name={name}
+              value={option.value}
+              defaultChecked={defaultValues.includes(option.value)}
+              className="size-5 shrink-0"
+            />
+            <label htmlFor={`${id}-${option.value}`}>{option.label}</label>
+          </div>
+        ))}
+      </div>
     </fieldset>
   );
 }

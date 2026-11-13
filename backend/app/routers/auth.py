@@ -13,6 +13,7 @@ from app.deps import DB, CurrentUser
 from app.errors import AppError
 from app.mailer import send_email
 from app.models.user import EmailCode, Role, User
+from app.permissions import activate_guardian_links
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -154,6 +155,7 @@ def verify(body: CodeIn, db: DB) -> SessionOut:
     user = find_user(db, body.email)
     consume_code(db, user, "verify", body.code)
     user.email_verified_at = utcnow()
+    activate_guardian_links(db, user)
     db.commit()
     return _session(user)
 

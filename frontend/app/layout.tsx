@@ -6,17 +6,13 @@ import { logout, setLanguage } from "@/app/actions";
 import { NavLink } from "@/components/NavLink";
 import { SessionTimeout } from "@/components/SessionTimeout";
 import { getLocale, getT } from "@/lib/i18n";
-import { getUser, type Role } from "@/lib/session";
+import { sectionsFor } from "@/lib/nav";
+import { getUser } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: { default: "Samavesh", template: "%s – Samavesh" },
   description: "Accessible support, compliance and grievance platform for specially abled students.",
 };
-
-/** Sections each role can open. The API enforces the same rules; this only builds the menu. */
-const NAV: { href: string; label: string; roles: Role[] }[] = [
-  { href: "/admin/users", label: "nav.users", roles: ["administrator"] },
-];
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [t, locale, user, store] = await Promise.all([getT(), getLocale(), getUser(), cookies()]);
@@ -42,7 +38,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                     <NavLink href="/dashboard">{t("nav.dashboard")}</NavLink>
                   </li>
                 )}
-                {NAV.filter((item) => user && item.roles.includes(user.role)).map((item) => (
+                {(user ? sectionsFor(user) : []).map((item) => (
                   <li key={item.href}>
                     <NavLink href={item.href}>{t(item.label)}</NavLink>
                   </li>

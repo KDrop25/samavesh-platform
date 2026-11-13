@@ -1,5 +1,12 @@
 import { test } from "@playwright/test";
-import { expectNoViolations, scanInAllThemes, signIn, type RoleName } from "./helpers";
+import {
+  ADULT_STUDENT,
+  MINOR_STUDENT,
+  expectNoViolations,
+  scanInAllThemes,
+  signIn,
+  type RoleName,
+} from "./helpers";
 
 /**
  * Every page, in every theme and in Hindi, must pass axe (WCAG 2.1 A + AA).
@@ -18,12 +25,12 @@ const PUBLIC_PAGES = [
 ];
 
 const PAGES_BY_ROLE: Record<RoleName, string[]> = {
-  administrator: ["/dashboard", "/admin/users"],
-  nodal_officer: ["/dashboard"],
+  administrator: ["/dashboard", "/admin/users", "/students", MINOR_STUDENT],
+  nodal_officer: ["/dashboard", "/students", ADULT_STUDENT, MINOR_STUDENT],
   grievance_officer: ["/dashboard"],
-  support_staff: ["/dashboard"],
-  student: ["/dashboard"],
-  guardian: ["/dashboard"],
+  support_staff: ["/dashboard", "/students", ADULT_STUDENT, MINOR_STUDENT],
+  student: ["/dashboard", ADULT_STUDENT],
+  guardian: ["/dashboard", "/students", MINOR_STUDENT],
 };
 
 test.describe("axe: public pages", () => {

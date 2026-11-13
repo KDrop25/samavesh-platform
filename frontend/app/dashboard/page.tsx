@@ -1,17 +1,13 @@
 import Link from "next/link";
 import { getT, titled } from "@/lib/i18n";
-import { requireUser, type Role } from "@/lib/session";
+import { sectionsFor } from "@/lib/nav";
+import { requireUser } from "@/lib/session";
 
 export const generateMetadata = titled("dashboard.title");
 
-/** One card per section the role can use. Grows as modules are added. */
-const SECTIONS: { href: string; title: string; text: string; roles: Role[] }[] = [
-  { href: "/admin/users", title: "nav.users", text: "dashboard.users", roles: ["administrator"] },
-];
-
 export default async function DashboardPage() {
   const [t, user] = await Promise.all([getT(), requireUser()]);
-  const sections = SECTIONS.filter((section) => section.roles.includes(user.role));
+  const sections = sectionsFor(user);
 
   return (
     <>
@@ -25,7 +21,7 @@ export default async function DashboardPage() {
           {sections.map((section) => (
             <li key={section.href} className="card">
               <h3>
-                <Link href={section.href}>{t(section.title)}</Link>
+                <Link href={section.href}>{t(section.label)}</Link>
               </h3>
               <p>{t(section.text)}</p>
             </li>

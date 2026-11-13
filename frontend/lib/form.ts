@@ -25,6 +25,8 @@ function issueMessage(t: T, field: string, type: string, ctx?: Record<string, un
   if (type === "string_too_short") return t("error.min_length", { n: Number(ctx?.min_length) });
   if (type === "string_too_long") return t("error.max_length", { n: Number(ctx?.max_length) });
   if (type.startsWith("date")) return t("error.date");
+  if (type.startsWith("int")) return t("error.number");
+  if (type.endsWith("than_equal")) return t("error.range");
   if (field === "email") return t("error.email");
   if (field === "code") return t("error.code");
   return t("error.invalid");

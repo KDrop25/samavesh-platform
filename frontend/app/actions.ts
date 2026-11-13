@@ -116,3 +116,66 @@ export async function setUserActive(id: number, name: string, active: boolean): 
   revalidatePath("/admin/users");
   return { ok: true, message: t(active ? "users.activated" : "users.deactivated", { name }) };
 }
+
+// ---- Students: guardians, consent, staff assignment, support profile ----
+
+/** Run an API call for a student page and turn the outcome into a form result. */
+async function studentAction(
+  studentId: number,
+  path: string,
+  init: { method: string; body?: unknown },
+  success: string,
+  form?: FormData,
+): Promise<FormState> {
+  const t = await getT();
+  const result = await api(`/students/${studentId}${path}`, init);
+  if (!result.ok) return failure(t, result, form);
+  revalidatePath(`/students/${studentId}`);
+  return { ok: true, message: success };
+}
+
+export async function inviteGuardian(studentId: number, _: FormState, form: FormData): Promise<FormState> {
+  const t = await getT();
+  const body = pick(form, ["guardian_email", "relationship"]);
+  const message = t("guardians.invited", { email: String(body.guardian_email ?? "") });
+  return studentAction(studentId, "/guardians", { method: "POST", body }, message, form);
+}
+
+export async function removeGuardian(studentId: number, linkId: number, email: string): Promise<FormState> {
+  const t = await getT();
+  return studentAction(studentId, `/guardians/${linkId}`, { method: "DELETE" }, t("guardians.removed", { email }));
+}
+
+/** Guardian consenting in the app (no fields) or staff recording a paper consent (three fields). */
+export async function recordConsent(studentId: number, _: FormState, form: FormData): Promise<FormState> {
+  const t = await getT();
+  const body = pick(form, ["consenting_person_name", "relationship", "consent_date"]);
+  return studentAction(studentId, "/consent", { method: "POST", body }, t("consent.saved"), form);
+}
+
+export async function assignStaff(studentId: number, _: FormState, form: FormData): Promise<FormState> {
+  const t = await getT();
+  const body = { staff_id: Number(form.get("staff_id")) };
+  return studentAction(studentId, "/assignments", { method: "POST", body }, t("staff.assigned"), form);
+}
+
+export async function endAssignment(studentId: number, assignmentId: number, name: string): Promise<FormState> {
+  const t = await getT();
+  return studentAction(studentId, `/assignments/${assignmentId}`, { method: "DELETE" }, t("staff.ended", { name }));
+}
+
+export async function saveProfile(studentId: number, _: FormState, form: FormData): Promise<FormState> {
+  const t = await getT();
+  const text = pick(form, [
+    "enrollment_no",
+    "programme",
+    "department",
+    "year_of_study",
+    "udid_number",
+    "benchmark_percentage",
+    "support_needs",
+    "communication_preference",
+  ]);
+  const body = { ...text, disability_categories: form.getAll("disability_categories") };
+  return studentAction(studentId, "/profile", { method: "PUT", body }, t("profile.saved"), form);
+}

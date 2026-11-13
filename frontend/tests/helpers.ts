@@ -15,6 +15,10 @@ export const ACCOUNTS = {
 } as const;
 export type RoleName = keyof typeof ACCOUNTS;
 
+/** Seeded student ids (insertion order in seed.py): Asha Verma is an adult, Kavya Menon is under 18. */
+export const ADULT_STUDENT = "/students/6";
+export const MINOR_STUDENT = "/students/8";
+
 export async function signIn(page: Page, role: RoleName) {
   await page.goto("/login");
   await page.getByLabel("Email address").fill(ACCOUNTS[role]);
@@ -36,6 +40,14 @@ export async function expectNoViolations(page: Page, label: string) {
     (v) => `${v.id}: ${v.help} [${v.nodes.map((n) => n.target.join(" ")).join(" | ")}]`,
   );
   expect.soft(summary, `axe violations on ${label}`).toEqual([]);
+
+  // axe no longer reports duplicate ids, but a duplicate silently breaks label and
+  // aria-describedby associations, so check for them here.
+  const duplicateIds = await page.evaluate(() => {
+    const ids = [...document.querySelectorAll("[id]")].map((el) => el.id);
+    return [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
+  });
+  expect.soft(duplicateIds, `duplicate ids on ${label}`).toEqual([]);
 }
 
 /** Visit a page in every theme, plus once in Hindi, and scan each. */

@@ -60,13 +60,32 @@ def create_token(user) -> str:
     return jwt.encode(claims, get_settings().secret_key, algorithm="HS256")
 
 
-def decode_token(token: str) -> dict | None:
+def _decode(token: str) -> dict | None:
     try:
         return jwt.decode(
             token,
             get_settings().secret_key,
             algorithms=["HS256"],
-            options={"require": ["exp", "iat", "sub"]},
+            options={"require": ["exp", "iat"]},
         )
     except jwt.InvalidTokenError:  # includes expired
         return None
+
+
+def decode_token(token: str) -> dict | None:
+    """Session token. Single-purpose tokens (below) carry a "typ" and are never a session."""
+    claims = _decode(token)
+    return claims if claims and "sub" in claims and "typ" not in claims else None
+
+
+def create_purpose_token(typ: str, minutes: int, **claims) -> str:
+    """Short-lived token for one action (file upload/download), issued after an access check.
+    It lets the browser send or fetch a file directly from the API without a session cookie."""
+    now = utcnow()
+    payload = {"typ": typ, "iat": now, "exp": now + timedelta(minutes=minutes), **claims}
+    return jwt.encode(payload, get_settings().secret_key, algorithm="HS256")
+
+
+def decode_purpose_token(token: str, typ: str) -> dict | None:
+    claims = _decode(token)
+    return claims if claims and claims.get("typ") == typ else None

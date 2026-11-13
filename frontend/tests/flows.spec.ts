@@ -13,6 +13,91 @@ async function codeFromOutbox(page: Page, email: string): Promise<string> {
   return /\b\d{6}\b/.exec(text)![0];
 }
 
+test("an under-18 student's profile is blocked until consent is recorded, then created with a certificate", async ({ page }) => {
+  const email = unique("minor");
+  const name = `Minor ${Date.now()}`;
+
+  // 1. A student under 18 registers. They cannot create their own profile.
+  await page.goto("/register");
+  await page.getByLabel("Full name").fill(name);
+  await page.getByLabel("Email address").fill(email);
+  await page.getByLabel("Password").fill("a long test passphrase");
+  await page.getByLabel("Date of birth").fill("2012-06-01");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.waitForURL("**/verify?**");
+  const code = await codeFromOutbox(page, email);
+  await page.goto(`/verify?email=${encodeURIComponent(email)}`);
+  await page.getByLabel("6-digit code").fill(code);
+  await page.getByRole("button", { name: "Verify email" }).click();
+  await page.waitForURL("**/dashboard");
+  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "My support profile" }).click();
+  await expect(page.getByText("A support profile cannot be created until consent has been recorded.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save profile" })).toHaveCount(0);
+  const studentUrl = page.url();
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.waitForURL("**/login");
+
+  // 2. The nodal officer records a paper consent - person and date - which unlocks the profile.
+  await signIn(page, "nodal_officer");
+  await page.goto("/students");
+  await page.getByRole("link", { name }).click();
+  await expect(page.getByRole("button", { name: "Save profile" })).toHaveCount(0);
+  await page.getByLabel("Name of the person who consented").fill("Parent Example");
+  // Two forms on this page have a "Relationship" field; pick the one in the Consent section.
+  await page.getByRole("region", { name: "Consent" }).getByLabel("Relationship to the student").fill("Father");
+  await page.getByLabel("Date consent was given").fill("2026-11-01");
+  await page.getByRole("button", { name: "Record consent" }).click();
+  await expect(page.getByText("Parent Example (Father) gave consent on 1 November 2026.")).toBeVisible();
+
+  // 3. Create the profile: every disability field is optional.
+  await page.getByLabel("Support needs, in your own words").fill("Needs a scribe for written exams.");
+  await page.getByLabel("Low vision").check();
+  await page.getByRole("button", { name: "Save profile" }).click();
+  await expect(page.locator("main").getByRole("status").filter({ hasText: "Support profile saved." })).toBeFocused();
+
+  // 4. Upload a certificate; the result is announced and the file can be downloaded again.
+  const pdf = Buffer.from("%PDF-1.4 test disability certificate");
+  await page.getByLabel("Choose a file to upload").setInputFiles({ name: "certificate.pdf", mimeType: "application/pdf", buffer: pdf });
+  await page.getByRole("button", { name: "Upload certificate" }).click();
+  await expect(page.locator("main").getByRole("status").filter({ hasText: "The certificate has been uploaded." })).toBeFocused();
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("link", { name: "Download certificate.pdf" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("certificate.pdf");
+
+  // A file that is not a PDF/JPEG/PNG is refused with a clear message.
+  await page.getByLabel("Choose a file to upload").setInputFiles({ name: "notes.pdf", mimeType: "application/pdf", buffer: Buffer.from("plain text") });
+  await page.getByRole("button", { name: "Upload certificate" }).click();
+  await expect(page.locator("main").getByRole("alert")).toHaveText("The file must be a PDF, JPEG or PNG.");
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.waitForURL("**/login");
+
+  // 5. The student can read the profile but, being under 18, cannot edit it.
+  await page.getByLabel("Email address").fill(email);
+  await page.getByLabel("Password").fill("a long test passphrase");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.waitForURL("**/dashboard");
+  await page.goto(studentUrl);
+  await expect(page.getByText("Needs a scribe for written exams.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save profile" })).toHaveCount(0);
+});
+
+test("profiles are hidden from other students and from the grievance officer", async ({ page }) => {
+  await signIn(page, "student"); // Asha
+  await page.goto("/students/7"); // Imran's profile
+  await expect(page.getByRole("heading", { level: 1 })).not.toHaveText("Imran Sheikh");
+  await expect(page.getByText("Step-free access")).toHaveCount(0);
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.waitForURL("**/login");
+
+  await signIn(page, "grievance_officer");
+  await page.goto("/students");
+  await page.waitForURL("**/dashboard");
+  await page.goto("/students/6");
+  await page.waitForURL("**/dashboard");
+});
+
 test("a student registers, verifies their email with the code and reaches the dashboard", async ({ page }) => {
   const email = unique("student");
   await page.goto("/register");

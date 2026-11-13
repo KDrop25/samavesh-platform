@@ -29,6 +29,10 @@ PUBLIC = {
     "/auth/password/forgot",
     "/auth/password/reset",
     "/dev/emails",
+    # File transfer: authorised by a short-lived single-purpose signed token, issued only after
+    # an access check on an authenticated endpoint (see app/routers/files.py).
+    "/files",
+    "/files/{file_id}",
 }
 
 

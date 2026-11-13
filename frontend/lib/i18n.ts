@@ -11,6 +11,13 @@ export async function getLocale(): Promise<Locale> {
   return (await cookies()).get("locale")?.value === "hi" ? "hi" : "en";
 }
 
+/** "2026-11-13" -> "13 November 2026" / "13 नवंबर 2026". */
+export function formatDate(isoDate: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale === "hi" ? "hi-IN" : "en-IN", { dateStyle: "long", timeZone: "UTC" }).format(
+    new Date(isoDate),
+  );
+}
+
 /** `export const generateMetadata = titled("login.title")` gives each page a unique, translated title. */
 export const titled = (key: string) => async () => ({ title: (await getT())(key) });
 
