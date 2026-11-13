@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { logProvision, submitPlan } from "@/app/actions";
+import { endPlan, logProvision, revisePlan, submitPlan } from "@/app/actions";
 import { Field, Form } from "@/components/Form";
 import { PageNotice } from "@/components/PageNotice";
 import { api } from "@/lib/api";
-import { formatDate, getLocale, getT, titled } from "@/lib/i18n";
+import { formatDate, formatDateTime, getLocale, getT, titled } from "@/lib/i18n";
 import { requireUser } from "@/lib/session";
 
 export const generateMetadata = titled("plans.title");
@@ -30,8 +30,9 @@ type Plan = {
   notes: string | null;
   drafted_by: string;
   items: Item[];
+  decisions: { decision: string; approver: string; reason: string | null; decided_at: string }[];
 };
-type PlanList = { has_profile: boolean; can_draft: boolean; plans: Plan[] };
+type PlanList = { has_profile: boolean; can_draft: boolean; can_decide: boolean; plans: Plan[] };
 type Term = { id: number; name: string; start_date: string; end_date: string };
 type Summary = {
   term: Term;
@@ -48,7 +49,7 @@ export default async function PlansPage({ params, searchParams }: PageProps<"/st
   ]);
   if (!student.ok || !list.ok) notFound();
   const { full_name: name } = student.data.student;
-  const { has_profile, can_draft, plans } = list.data;
+  const { has_profile, can_draft, can_decide, plans } = list.data;
 
   const termList = terms.ok ? terms.data : [];
   const termId = typeof query.term === "string" && /^\d+$/.test(query.term) ? query.term : termList[0]?.id;
@@ -176,6 +177,45 @@ export default async function PlansPage({ params, searchParams }: PageProps<"/st
               </div>
             );
           })}
+
+          {plan.decisions.length > 0 && (
+            <div className="mt-4">
+              <h3 className="mb-1">{t("decisions.title", { id: plan.id })}</h3>
+              <ul className="list-disc ps-5">
+                {plan.decisions.map((decision, index) => (
+                  <li key={index}>
+                    {t("decisions.entry", {
+                      decision: t(`decision.label.${decision.decision}`),
+                      approver: decision.approver,
+                      date: formatDateTime(decision.decided_at, locale),
+                    })}
+                    {decision.reason && <> – {t("decisions.reason", { reason: decision.reason })}</>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {plan.status === "approved" && (can_draft || can_decide) && (
+            <div className="mt-5 flex flex-wrap items-start gap-3">
+              {can_draft && (
+                <Form
+                  action={revisePlan.bind(null, Number(id), plan.id)}
+                  submitLabel={t("plans.revise", { id: plan.id })}
+                  secondary
+                  {...formLabels}
+                />
+              )}
+              {can_decide && (
+                <Form
+                  action={endPlan.bind(null, Number(id), plan.id)}
+                  submitLabel={t("plans.end", { id: plan.id })}
+                  secondary
+                  {...formLabels}
+                />
+              )}
+            </div>
+          )}
 
           {can_draft && (plan.status === "draft" || plan.status === "rejected") && (
             <div className="mt-5 flex flex-wrap items-start gap-3">

@@ -9,7 +9,15 @@ from sqlalchemy.orm import Session
 from app.db import utcnow
 from app.deps import DB, CurrentUser, require_roles
 from app.errors import AppError
-from app.models.plan import ACCOMMODATION_TYPES, AccommodationPlan, PlanItem, PlanStatus, ProvisionLog, Term
+from app.models.plan import (
+    ACCOMMODATION_TYPES,
+    AccommodationPlan,
+    PlanDecision,
+    PlanItem,
+    PlanStatus,
+    ProvisionLog,
+    Term,
+)
 from app.models.student import StudentProfile
 from app.models.user import Role, User
 from app.permissions import OVERSIGHT, is_assigned_staff, require_student_access, visible_student_ids
@@ -124,6 +132,12 @@ def _item_view(db: Session, plan: AccommodationPlan, item: PlanItem, on: date) -
 
 def _plan_view(db: Session, plan: AccommodationPlan, on: date) -> dict:
     items = db.scalars(select(PlanItem).where(PlanItem.plan_id == plan.id).order_by(PlanItem.id)).all()
+    decisions = db.execute(
+        select(PlanDecision, User.full_name)
+        .join(User, User.id == PlanDecision.approver_id)
+        .where(PlanDecision.plan_id == plan.id)
+        .order_by(PlanDecision.id)
+    ).all()
     return {
         "id": plan.id,
         "version": plan.version,
@@ -137,6 +151,10 @@ def _plan_view(db: Session, plan: AccommodationPlan, on: date) -> dict:
         "drafted_by": db.scalar(select(User.full_name).where(User.id == plan.drafted_by)),
         "submitted_at": plan.submitted_at,
         "items": [_item_view(db, plan, item, on) for item in items],
+        "decisions": [
+            {"decision": d.decision, "approver": name, "reason": d.reason, "decided_at": d.created_at}
+            for d, name in decisions
+        ],
     }
 
 
@@ -179,6 +197,7 @@ def list_plans(student_id: int, db: DB, user: CurrentUser):
     return {
         "has_profile": profile is not None,
         "can_draft": profile is not None and is_assigned_staff(db, user, student_id),
+        "can_decide": user.role == Role.nodal_officer,
         "plans": [_plan_view(db, plan, on) for plan in plans],
     }
 
@@ -227,6 +246,102 @@ def submit_plan(plan_id: int, db: DB, user: CurrentUser):
     if plan.status != PlanStatus.draft:
         raise AppError(409, "plan_not_draft")
     plan.status, plan.submitted_at = PlanStatus.submitted, utcnow()
+    db.commit()
+    return {"status": plan.status}
+
+
+# ---- Governance: approval, new versions, ending ----
+
+
+class DecisionIn(BaseModel):
+    decision: Literal["approved", "rejected"]
+    reason: str | None = Field(None, max_length=2000)
+
+    @model_validator(mode="after")
+    def reason_when_rejecting(self) -> Self:
+        if self.decision == "rejected" and not (self.reason or "").strip():
+            raise ValueError("reason_required")
+        return self
+
+
+@router.get("/approvals", dependencies=[Depends(require_roles(*OVERSIGHT))])
+def pending_approvals(db: DB):
+    """Plans waiting for a nodal officer's decision, oldest first."""
+    rows = db.execute(
+        select(AccommodationPlan, User)
+        .join(StudentProfile, StudentProfile.id == AccommodationPlan.profile_id)
+        .join(User, User.id == StudentProfile.student_id)
+        .where(AccommodationPlan.status == PlanStatus.submitted)
+        .order_by(AccommodationPlan.submitted_at)
+    ).all()
+    on = today()
+    return [
+        {**_plan_view(db, plan, on), "student_id": student.id, "student_name": student.full_name}
+        for plan, student in rows
+    ]
+
+
+@router.post("/plans/{plan_id}/decision", dependencies=[Depends(require_roles(Role.nodal_officer))])
+def decide_plan(plan_id: int, body: DecisionIn, db: DB, user: CurrentUser):
+    """A plan is inactive until a nodal officer approves it. Every decision is logged with the
+    approver, the time and the reason, in an insert-only table."""
+    plan, _ = _plan_for_user(db, user, plan_id)
+    if plan.status != PlanStatus.submitted:
+        raise AppError(409, "plan_not_submitted")
+    db.add(
+        PlanDecision(plan_id=plan.id, decision=body.decision, approver_id=user.id, reason=(body.reason or "").strip() or None)
+    )
+    if body.decision == "rejected":
+        plan.status = PlanStatus.rejected
+    else:
+        plan.status = PlanStatus.approved
+        if plan.supersedes_plan_id:  # the previous version stayed in force until this moment
+            previous = db.get(AccommodationPlan, plan.supersedes_plan_id)
+            if previous.status == PlanStatus.approved:
+                previous.status, previous.ended_on = PlanStatus.superseded, today()
+    db.commit()
+    return {"status": plan.status}
+
+
+@router.post("/plans/{plan_id}/revise", status_code=201)
+def revise_plan(plan_id: int, db: DB, user: CurrentUser):
+    """Changing an approved plan: copy it into a new draft version. The approved version stays
+    active until the new one is approved, then it is marked superseded."""
+    plan, student_id = _plan_for_user(db, user, plan_id)
+    _require_assigned_staff(db, user, student_id)
+    if plan.status != PlanStatus.approved:
+        raise AppError(409, "plan_not_approved")
+    open_revision = db.scalar(
+        select(AccommodationPlan.id).where(
+            AccommodationPlan.supersedes_plan_id == plan.id,
+            AccommodationPlan.status.in_((PlanStatus.draft, PlanStatus.submitted, PlanStatus.rejected)),
+        )
+    )
+    if open_revision:
+        raise AppError(409, "revision_exists")
+    draft = AccommodationPlan(
+        profile_id=plan.profile_id,
+        version=plan.version + 1,
+        supersedes_plan_id=plan.id,
+        start_date=max(plan.start_date, today()),
+        review_date=plan.review_date if plan.review_date > today() else today() + (plan.review_date - plan.start_date),
+        notes=plan.notes,
+        drafted_by=user.id,
+    )
+    db.add(draft)
+    db.flush()
+    for item in db.scalars(select(PlanItem).where(PlanItem.plan_id == plan.id).order_by(PlanItem.id)):
+        db.add(PlanItem(plan_id=draft.id, type=item.type, details=item.details, interval_days=item.interval_days))
+    db.commit()
+    return {"id": draft.id}
+
+
+@router.post("/plans/{plan_id}/end", dependencies=[Depends(require_roles(Role.nodal_officer))])
+def end_plan(plan_id: int, db: DB, user: CurrentUser):
+    plan, _ = _plan_for_user(db, user, plan_id)
+    if plan.status != PlanStatus.approved:
+        raise AppError(409, "plan_not_approved")
+    plan.status, plan.ended_on = PlanStatus.ended, today()
     db.commit()
     return {"status": plan.status}
 

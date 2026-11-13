@@ -227,6 +227,31 @@ export async function submitPlan(studentId: number, planId: number): Promise<For
   redirect(withNotice(`/students/${studentId}/plans`, "plan_submitted"));
 }
 
+// ---- Governance: approve / reject, new version, end ----
+
+export async function decidePlan(planId: number, _: FormState, form: FormData): Promise<FormState> {
+  const t = await getT();
+  const body = pick(form, ["decision", "reason"]);
+  const result = await api(`/plans/${planId}/decision`, { method: "POST", body });
+  if (!result.ok) return failure(t, result, form);
+  redirect(withNotice("/approvals", body.decision === "approved" ? "plan_approved" : "plan_rejected"));
+}
+
+/** Changing an approved plan: start a new draft version and go straight to editing it. */
+export async function revisePlan(studentId: number, planId: number): Promise<FormState> {
+  const t = await getT();
+  const result = await api<{ id: number }>(`/plans/${planId}/revise`, { method: "POST" });
+  if (!result.ok) return failure(t, result);
+  redirect(`/students/${studentId}/plans/edit?plan=${result.data.id}`);
+}
+
+export async function endPlan(studentId: number, planId: number): Promise<FormState> {
+  const t = await getT();
+  const result = await api(`/plans/${planId}/end`, { method: "POST" });
+  if (!result.ok) return failure(t, result);
+  redirect(withNotice(`/students/${studentId}/plans`, "plan_ended"));
+}
+
 export async function logProvision(studentId: number, itemId: number, _: FormState, form: FormData): Promise<FormState> {
   const t = await getT();
   const body = pick(form, ["provided_on", "notes"]);

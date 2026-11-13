@@ -14,7 +14,7 @@ from app import models  # noqa: F401  (registers every table)
 from app.config import get_settings
 from app.db import Base, engine, utcnow
 from app.models.compliance import ComplianceItem
-from app.models.plan import AccommodationPlan, PlanItem, PlanStatus, ProvisionLog, Term
+from app.models.plan import AccommodationPlan, PlanDecision, PlanItem, PlanStatus, ProvisionLog, Term
 from app.models.student import GuardianLink, StaffAssignment, StudentProfile
 from app.models.user import Role, User
 from app.rules.dates import today
@@ -99,12 +99,12 @@ def seed(db: Session) -> None:
         )
     )
     db.flush()
-    seed_plans(db, asha, imran, staff, staff2)
+    seed_plans(db, asha, imran, staff, staff2, nodal)
     seed_compliance(db, nodal)
     db.commit()
 
 
-def seed_plans(db: Session, asha: User, imran: User, staff: User, staff2: User) -> None:
+def seed_plans(db: Session, asha: User, imran: User, staff: User, staff2: User, nodal: User) -> None:
     """Module 3. Dates are relative to today so the demo always shows one overdue item."""
     now = today()
     ago = lambda days: now - timedelta(days=days)  # noqa: E731
@@ -129,6 +129,14 @@ def seed_plans(db: Session, asha: User, imran: User, staff: User, staff2: User) 
     material = PlanItem(plan_id=plan.id, type="accessible_material", details="Lecture notes as tagged PDF, 18pt.", interval_days=14)
     seating = PlanItem(plan_id=plan.id, type="physical_access", details="Reserved front-row seat in all lecture halls.")
     db.add_all([extra_time, material, seating])
+    db.add(
+        PlanDecision(
+            plan_id=plan.id,
+            decision="approved",
+            approver_id=nodal.id,
+            reason="Consistent with the student's documented needs and the examination guidelines.",
+        )
+    )
     db.flush()
     for item, days, note in (
         (extra_time, 62, "Class test 1"),

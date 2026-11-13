@@ -18,6 +18,10 @@ export function sectionsFor(user: User): Section[] {
     sections.push({ href: "/provisions/overdue", label: "nav.overdue", text: "dashboard.overdue" });
     sections.push({ href: "/compliance", label: "nav.compliance", text: "dashboard.compliance" });
   }
+  if (["nodal_officer", "administrator"].includes(user.role)) {
+    sections.push({ href: "/approvals", label: "nav.approvals", text: "dashboard.approvals" });
+    sections.push({ href: "/audit", label: "nav.audit", text: "dashboard.audit" });
+  }
   if (user.role === "nodal_officer") {
     sections.push({ href: "/terms", label: "nav.terms", text: "dashboard.terms" });
   }

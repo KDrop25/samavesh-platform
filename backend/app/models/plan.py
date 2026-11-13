@@ -4,6 +4,7 @@ from datetime import date, datetime
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.audit import make_append_only
 from app.crypto import EncryptedText
 from app.db import Base
 
@@ -58,6 +59,21 @@ class PlanItem(Base):
     type: Mapped[str] = mapped_column(String(32))  # one of ACCOMMODATION_TYPES
     details: Mapped[str | None] = mapped_column(EncryptedText)
     interval_days: Mapped[int | None]  # expected every N days; null = standing arrangement
+
+
+class PlanDecision(Base):
+    """Approval or rejection by a nodal officer: who, when (created_at) and why. Insert-only."""
+
+    __tablename__ = "plan_decisions"
+    __audited__ = True
+
+    plan_id: Mapped[int] = mapped_column(ForeignKey("accommodation_plans.id"), index=True)
+    decision: Mapped[str] = mapped_column(String(10))  # approved | rejected
+    approver_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    reason: Mapped[str | None] = mapped_column(EncryptedText)  # required when rejecting
+
+
+make_append_only(PlanDecision.__table__)
 
 
 class ProvisionLog(Base):

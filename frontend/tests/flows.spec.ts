@@ -13,6 +13,53 @@ async function codeFromOutbox(page: Page, email: string): Promise<string> {
   return /\b\d{6}\b/.exec(text)![0];
 }
 
+test("a submitted plan stays inactive until the nodal officer approves it, and the decision is logged", async ({ page }) => {
+  const marker = `Approval flow ${Date.now()}`;
+
+  // Support staff draft and submit a plan.
+  await signIn(page, "support_staff");
+  await page.goto(`${ADULT_STUDENT}/plans/edit`);
+  await page.getByLabel("Start date").fill("2026-11-01");
+  await page.getByLabel("Review date").fill("2027-05-31");
+  await page.getByLabel(/^Notes/).fill(marker);
+  await page.getByRole("group", { name: "Transport" }).getByLabel("Include in this plan").check();
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await page.waitForURL("**/plans?notice=plan_saved**");
+  const mine = page.getByRole("region").filter({ hasText: marker });
+  await mine.getByRole("button", { name: /^Submit plan \d+ for approval$/ }).click();
+  await expect(mine).toContainText("Submitted, waiting for the nodal officer – Not active");
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.waitForURL("**/login");
+
+  // The nodal officer must give a reason to reject; approving activates the plan.
+  await signIn(page, "nodal_officer");
+  await page.goto("/approvals");
+  const pending = page.getByRole("region").filter({ hasText: marker });
+  await pending.getByLabel("Reject").check();
+  await pending.getByRole("button", { name: /^Record decision/ }).click();
+  await expect(page.locator("main").getByRole("alert")).toContainText("Reason: Enter a reason");
+  await pending.getByLabel("Approve").check();
+  await pending.getByLabel(/^Reason/).fill("Transport need is documented in the profile.");
+  await pending.getByRole("button", { name: /^Record decision/ }).click();
+  await expect(page.locator("main").getByRole("status").filter({ hasText: "The plan has been approved." })).toBeFocused();
+  await expect(page.getByRole("region").filter({ hasText: marker })).toHaveCount(0);
+
+  // The plan is now active and shows who approved it, when and why.
+  await page.goto(`${ADULT_STUDENT}/plans`);
+  const approved = page.getByRole("region").filter({ hasText: marker });
+  await expect(approved).toContainText("Approved – Active");
+  await expect(approved).toContainText("Approved by Dr. Farhan Qureshi on");
+  await expect(approved).toContainText("Reason: Transport need is documented in the profile.");
+
+  // The audit log has the decision, without the encrypted reason, and offers no way to edit it.
+  await page.goto("/audit?type=plan_decisions");
+  const entry = page.getByRole("row").filter({ hasText: "Plan decision" }).first();
+  await expect(entry).toContainText("Dr. Farhan Qureshi (Nodal officer)");
+  await expect(entry).toContainText("Created");
+  await expect(page.locator("main")).not.toContainText("Transport need is documented");
+  await expect(page.locator("main").getByRole("button")).toHaveCount(1); // only the filter button
+});
+
 test("the nodal officer maintains the compliance checklist with reasons and evidence; staff only read it", async ({ page }) => {
   const obligation = `Accessible library catalogue ${Date.now()}`;
   await signIn(page, "nodal_officer");
@@ -25,7 +72,7 @@ test("the nodal officer maintains the compliance checklist with reasons and evid
   await page.getByLabel("Due date").fill("2027-03-31");
   await page.getByRole("combobox", { name: "Status" }).selectOption("not_compliant");
   await page.getByRole("button", { name: "Add item" }).click();
-  await expect(page.locator("main").getByRole("alert")).toContainText("Give a reason when the status is not Compliant");
+  await expect(page.locator("main").getByRole("alert")).toContainText("Reason: Enter a reason");
   await page.getByLabel(/^Reason/).fill("Catalogue vendor has not delivered the accessible version.");
   await page.getByRole("button", { name: "Add item" }).click();
   await expect(page.locator("main").getByRole("status").filter({ hasText: "Checklist item added." })).toBeFocused();
@@ -89,7 +136,11 @@ test("support staff draft and submit a plan, log a provision, and see planned ve
   await expect(page.locator("main").getByRole("status").filter({ hasText: "submitted to the nodal officer" })).toBeFocused();
 
   // Log a provision against the approved, active plan.
-  const active = page.getByRole("region").filter({ hasText: "Approved – Active" }).first();
+  const active = page
+    .getByRole("region")
+    .filter({ hasText: "Approved – Active" })
+    .filter({ hasText: "Extra time" })
+    .first();
   await active.getByText("Log a provision: Extra time").click();
   await active.getByLabel("Notes").first().fill("Quiz 3");
   await active.getByRole("button", { name: "Log provision" }).first().click();

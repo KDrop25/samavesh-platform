@@ -10,6 +10,9 @@ const NOTICES: Record<string, string> = {
   consent_saved: "consent.saved",
   plan_saved: "plans.saved",
   plan_submitted: "plans.submitted",
+  plan_approved: "plans.approved",
+  plan_rejected: "plans.rejected",
+  plan_ended: "plans.ended",
   evidence_removed: "evidence.removed",
   item_deleted: "compliance.deleted",
 };

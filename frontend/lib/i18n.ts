@@ -18,6 +18,15 @@ export function formatDate(isoDate: string, locale: Locale): string {
   );
 }
 
+/** ISO timestamp -> "13 Nov 2026, 2:05 pm" in Indian Standard Time. */
+export function formatDateTime(iso: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale === "hi" ? "hi-IN" : "en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata",
+  }).format(new Date(iso));
+}
+
 /** `export const generateMetadata = titled("login.title")` gives each page a unique, translated title. */
 export const titled = (key: string) => async () => ({ title: (await getT())(key) });
 

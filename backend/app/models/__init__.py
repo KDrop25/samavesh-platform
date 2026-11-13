@@ -2,7 +2,7 @@
 
 from app.audit import AuditLog
 from app.models.compliance import ComplianceEvidence, ComplianceItem
-from app.models.plan import AccommodationPlan, PlanItem, ProvisionLog, Term
+from app.models.plan import AccommodationPlan, PlanDecision, PlanItem, ProvisionLog, Term
 from app.models.student import Consent, GuardianLink, StaffAssignment, StoredFile, StudentProfile
 from app.models.user import DevEmail, EmailCode, Role, User
 
@@ -11,6 +11,7 @@ __all__ = [
     "AuditLog",
     "ComplianceEvidence",
     "ComplianceItem",
+    "PlanDecision",
     "PlanItem",
     "ProvisionLog",
     "Term",
