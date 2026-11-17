@@ -11,6 +11,9 @@ services:
       DATA_ENCRYPTION_KEYS: ${DATA_ENCRYPTION_KEYS}
       JOBS_SECRET: ${JOBS_SECRET}
       FRONTEND_ORIGIN: ${PUBLIC_URL}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}  # Qwen on the host running Ollama
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - samavesh-data:/data
   web:

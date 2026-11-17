@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     mail_from: str = "Samavesh <no-reply@samavesh.local>"
     jobs_secret: str = ""  # guards POST /internal/jobs/run
+    ollama_url: str = "http://localhost:11434"  # local Ollama server for the assistant
+    ollama_model: str = "qwen3:14b"
 
     @property
     def is_prod(self) -> bool:
