@@ -15,6 +15,29 @@ export const metadata: Metadata = {
   description: "Accessible support, compliance and grievance platform for specially abled students.",
 };
 
+function Brand({ name }: { name: string }) {
+  return (
+    <Link href="/" className="brand">
+      <span className="brand-mark" aria-hidden="true">
+        स
+      </span>
+      {name}
+    </Link>
+  );
+}
+
+function NavList({ items, row }: { items: { href: string; label: string }[]; row?: boolean }) {
+  return (
+    <ul className={row ? "flex flex-wrap gap-1" : "nav-list"}>
+      {items.map((i) => (
+        <li key={i.href}>
+          <NavLink href={i.href}>{i.label}</NavLink>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [t, locale, user, store] = await Promise.all([getT(), getLocale(), getUser(), cookies()]);
   const theme = store.get("theme")?.value;
@@ -23,80 +46,74 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const inbox = user ? await api<{ unread: number }>("/notifications") : null;
   const unread = inbox?.ok ? inbox.data.unread : 0;
 
+  const items: { href: string; label: string }[] = [
+    ...(user ? [{ href: "/dashboard", label: t("nav.dashboard") }] : []),
+    ...(user ? sectionsFor(user) : []).map((i) => ({ href: i.href, label: t(i.label) })),
+    { href: "/grievances/new", label: t("nav.raise") },
+    { href: "/track", label: t("nav.track") },
+    ...(user ? [{ href: "/notifications", label: `${t("nav.notifications")} (${unread})` }] : []),
+    { href: "/settings", label: t("nav.settings") },
+    ...(user ? [] : [{ href: "/login", label: t("nav.signIn") }, { href: "/register", label: t("nav.register") }]),
+  ];
+
   return (
     <html lang={locale} data-theme={theme} data-text-size={textSize} className="h-full">
-      <body className="flex min-h-full flex-col font-sans">
+      <body className="min-h-full font-sans">
         <a href="#main" className="skip-link">
           {t("nav.skip")}
         </a>
-        <header className="border-b border-border">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2">
-            <Link href="/" className="text-xl font-bold text-fg no-underline">
-              {t("app.name")}
-            </Link>
-            <nav aria-label={t("nav.main")} className="flex-1">
-              <ul className="flex flex-wrap gap-x-2">
-                {user && (
-                  <li>
-                    <NavLink href="/dashboard">{t("nav.dashboard")}</NavLink>
-                  </li>
-                )}
-                {(user ? sectionsFor(user) : []).map((item) => (
-                  <li key={item.href}>
-                    <NavLink href={item.href}>{t(item.label)}</NavLink>
-                  </li>
-                ))}
-                <li>
-                  <NavLink href="/grievances/new">{t("nav.raise")}</NavLink>
-                </li>
-                <li>
-                  <NavLink href="/track">{t("nav.track")}</NavLink>
-                </li>
-                {user && (
-                  <li>
-                    <NavLink href="/notifications">
-                      {t("nav.notifications")} <span aria-live="polite">({unread})</span>
-                    </NavLink>
-                  </li>
-                )}
-                <li>
-                  <NavLink href="/settings">{t("nav.settings")}</NavLink>
-                </li>
-                {!user && (
-                  <>
-                    <li>
-                      <NavLink href="/login">{t("nav.signIn")}</NavLink>
-                    </li>
-                    <li>
-                      <NavLink href="/register">{t("nav.register")}</NavLink>
-                    </li>
-                  </>
-                )}
-              </ul>
-            </nav>
-            <div className="flex flex-wrap items-center gap-3">
-              <form action={setLanguage.bind(null, other)}>
-                <button type="submit" lang={other} className="btn btn-secondary">
-                  {other === "hi" ? "हिन्दी" : "English"}
-                </button>
-              </form>
-              {user && (
-                <form action={logout} className="flex items-center gap-3">
-                  <span className="text-muted">{t("nav.signedInAs", { name: user.full_name })}</span>
-                  <button type="submit" className="btn btn-secondary">
-                    {t("nav.signOut")}
+        <div className={user ? "shell shell-side" : "shell"}>
+          {user ? (
+            <aside className="side">
+              <Brand name={t("app.name")} />
+              <nav aria-label={t("nav.main")}>
+                <NavList items={items} />
+              </nav>
+              <div className="side-foot">
+                <div className="flex items-center gap-3 px-1">
+                  <span className="avatar" aria-hidden="true">
+                    {user.full_name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="text-sm leading-snug text-muted">{t("nav.signedInAs", { name: user.full_name })}</span>
+                </div>
+                <div className="flex gap-2">
+                  <form action={setLanguage.bind(null, other)}>
+                    <button type="submit" lang={other} className="btn btn-secondary">
+                      {other === "hi" ? "हिन्दी" : "English"}
+                    </button>
+                  </form>
+                  <form action={logout}>
+                    <button type="submit" className="btn btn-secondary">
+                      {t("nav.signOut")}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </aside>
+          ) : (
+            <header className="topbar">
+              <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2">
+                <Brand name={t("app.name")} />
+                <nav aria-label={t("nav.main")} className="flex-1">
+                  <NavList items={items} row />
+                </nav>
+                <form action={setLanguage.bind(null, other)}>
+                  <button type="submit" lang={other} className="btn btn-secondary">
+                    {other === "hi" ? "हिन्दी" : "English"}
                   </button>
                 </form>
-              )}
-            </div>
+              </div>
+            </header>
+          )}
+          <div className="flex min-w-0 flex-col">
+            <main id="main" tabIndex={-1} className={`mx-auto w-full flex-1 px-4 py-8 lg:px-10 ${user ? "max-w-5xl" : "max-w-6xl"}`}>
+              {children}
+            </main>
+            <footer className="border-t border-line">
+              <p className="mx-auto max-w-6xl px-4 py-4 text-sm text-muted lg:px-10">{t("footer.text")}</p>
+            </footer>
           </div>
-        </header>
-        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
-          {children}
-        </main>
-        <footer className="border-t border-border">
-          <p className="mx-auto max-w-5xl px-4 py-4 text-muted">{t("footer.text")}</p>
-        </footer>
+        </div>
         {user && (
           <SessionTimeout
             labels={{

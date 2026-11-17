@@ -1,0 +1,10 @@
+# Single entry point. TLS and the domain are handled in front of this (plain HTTP here).
+{
+	auto_https off
+}
+:80 {
+	handle_path /api/* {
+		reverse_proxy backend:8210
+	}
+	reverse_proxy web:3210
+}

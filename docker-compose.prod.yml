@@ -1,0 +1,32 @@
+# Production stack: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# .env.prod needs SECRET_KEY, DATA_ENCRYPTION_KEYS, JOBS_SECRET, PUBLIC_URL (see README).
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      ENV: prod
+      DATABASE_URL: sqlite:////data/samavesh.db
+      SECRET_KEY: ${SECRET_KEY}
+      DATA_ENCRYPTION_KEYS: ${DATA_ENCRYPTION_KEYS}
+      JOBS_SECRET: ${JOBS_SECRET}
+      FRONTEND_ORIGIN: ${PUBLIC_URL}
+    volumes:
+      - samavesh-data:/data
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    environment:
+      API_URL: http://backend:8210
+      API_PUBLIC_URL: ${PUBLIC_URL}/api
+    depends_on: [backend]
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "8480:80"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on: [web, backend]
+volumes:
+  samavesh-data:

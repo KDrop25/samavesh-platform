@@ -11,15 +11,12 @@
   "nav.signOut": "Sign out",
   "nav.signedInAs": "Signed in as {name}",
   "footer.text": "Samavesh is a final-year B.Tech project, built to WCAG 2.1 Level AA.",
-
   "home.title": "Support, compliance and grievance redressal in one accessible place",
   "home.intro": "Samavesh helps a higher-education institution record accommodation plans, track the support actually delivered, monitor its statutory obligations and resolve grievances.",
   "home.start": "Create an account",
-
   "form.optional": "(optional)",
   "form.errorSummary": "There is a problem",
   "form.pending": "Please wait…",
-
   "field.email": "Email address",
   "field.password": "Password",
   "field.new_password": "New password",
@@ -30,26 +27,22 @@
   "hint.password": "At least 10 characters. A phrase of several words is easy to remember.",
   "hint.code": "Enter the code from the email we sent you.",
   "hint.date_of_birth": "Students only. If you are under 18 we ask a parent or guardian for consent before creating your support profile.",
-
   "role.student": "Student",
   "role.guardian": "Parent or guardian",
   "role.support_staff": "Support staff",
   "role.nodal_officer": "Nodal officer",
   "role.grievance_officer": "Grievance officer",
   "role.administrator": "Administrator",
-
   "login.title": "Sign in",
   "login.submit": "Sign in",
   "login.forgot": "Forgot your password, or setting one for the first time?",
   "login.noAccount": "New here? Create an account",
   "login.timeout": "You were signed out because you were inactive for 30 minutes. Sign in again to continue.",
   "login.passwordSet": "Your password has been set. Sign in to continue.",
-
   "register.title": "Create an account",
   "register.intro": "Students and their parents or guardians can register here. Staff accounts are created by an administrator.",
   "register.submit": "Create account",
   "register.haveAccount": "Already have an account? Sign in",
-
   "verify.title": "Check your email",
   "verify.intro": "We sent a 6-digit code to {email}. It expires in 10 minutes.",
   "verify.submit": "Verify email",
@@ -57,20 +50,17 @@
   "verify.resend": "Send a new code",
   "verify.resent": "A new code has been sent.",
   "verify.outbox": "Development mode: open the email outbox",
-
   "reset.title": "Set or reset your password",
   "reset.intro": "Enter your email address and we will send you a 6-digit code.",
   "reset.send": "Send code",
   "reset.sent": "If an account exists for {email}, a code has been sent. It expires in 10 minutes.",
   "reset.submit": "Set password",
-
   "dashboard.title": "Dashboard",
   "dashboard.welcome": "Welcome, {name}",
   "dashboard.role": "Your role: {role}",
   "dashboard.sections": "Your sections",
   "dashboard.empty": "More sections will appear here as they are switched on for your role.",
   "dashboard.users": "Invite staff and manage accounts.",
-
   "users.title": "Users",
   "users.caption": "All accounts",
   "users.name": "Name",
@@ -91,7 +81,6 @@
   "users.invited": "Invitation sent to {email}.",
   "users.deactivated": "{name} has been deactivated and signed out.",
   "users.activated": "{name} has been reactivated.",
-
   "settings.title": "Display settings",
   "settings.intro": "These settings are saved on this device.",
   "settings.theme": "Colour theme",
@@ -106,11 +95,9 @@
   "size.larger": "Larger",
   "settings.save": "Save settings",
   "settings.saved": "Display settings saved.",
-
   "timeout.title": "Are you still there?",
   "timeout.body": "For your security you will be signed out in about 2 minutes because you have not been active.",
   "timeout.stay": "Stay signed in",
-
   "outbox.title": "Development email outbox",
   "outbox.intro": "Emails are listed here instead of being sent because SMTP is not configured. This page does not exist in production.",
   "outbox.caption": "Most recent emails",
@@ -118,12 +105,10 @@
   "outbox.subject": "Subject",
   "outbox.body": "Message",
   "outbox.empty": "No emails yet.",
-
   "nav.students": "Students",
   "nav.myProfile": "My support profile",
   "dashboard.students": "Open the students you support: their profiles, guardians and consent.",
   "dashboard.myProfile": "Your support profile, your guardians and your assigned staff.",
-
   "students.title": "Students",
   "students.caption": "Students you can see",
   "students.empty": "No students are linked to your account yet.",
@@ -135,10 +120,8 @@
   "students.profile": "Support profile",
   "students.hasProfile": "Created",
   "students.noProfile": "Not created",
-
   "student.details": "Student details",
   "student.dob": "Date of birth",
-
   "guardians.title": "Parents and guardians",
   "guardians.none": "No parent or guardian is linked.",
   "guardians.status.invited": "invited, waiting for them to register",
@@ -152,7 +135,6 @@
   "field.guardian_email": "Parent or guardian's email address",
   "field.relationship": "Relationship to the student",
   "hint.relationship": "For example: mother, father, legal guardian.",
-
   "consent.title": "Consent",
   "consent.needed": "This student is under 18. A parent or guardian must consent before a support profile can be created.",
   "consent.given": "{name} ({relationship}) gave consent on {date}.",
@@ -165,7 +147,6 @@
   "consent.saved": "Consent has been recorded.",
   "field.consenting_person_name": "Name of the person who consented",
   "field.consent_date": "Date consent was given",
-
   "staff.title": "Assigned support staff",
   "staff.none": "No support staff are assigned.",
   "staff.assign.title": "Assign support staff",
@@ -174,7 +155,6 @@
   "staff.assigned": "Support staff assigned.",
   "staff.end": "End assignment of {name}",
   "staff.ended": "The assignment has been ended.",
-
   "profile.title": "Support profile",
   "profile.none": "No support profile has been created yet.",
   "profile.blocked": "A support profile cannot be created until consent has been recorded.",
@@ -193,7 +173,6 @@
   "field.support_needs": "Support needs, in your own words",
   "hint.support_needs": "For example: a scribe in exams, course material in large print, a ground-floor classroom.",
   "field.communication_preference": "Preferred way to communicate",
-
   "certificate.title": "Disability certificate",
   "certificate.download": "Download {name}",
   "certificate.none": "No certificate has been uploaded.",
@@ -201,7 +180,6 @@
   "certificate.upload.hint": "PDF, JPEG or PNG, up to 10 MB. Uploading replaces the current file. The file is stored encrypted.",
   "certificate.upload.submit": "Upload certificate",
   "certificate.uploaded": "The certificate has been uploaded.",
-
   "rpwd.blindness": "Blindness",
   "rpwd.low_vision": "Low vision",
   "rpwd.leprosy_cured": "Leprosy cured persons",
@@ -223,12 +201,10 @@
   "rpwd.multiple_disabilities": "Multiple disabilities, including deaf-blindness",
   "rpwd.acid_attack_victim": "Acid attack victims",
   "rpwd.parkinsons_disease": "Parkinson's disease",
-
   "nav.overdue": "Overdue provisions",
   "nav.terms": "Terms",
   "dashboard.overdue": "Accommodations whose planned interval has passed without a logged provision.",
   "dashboard.terms": "Define the academic terms used in planned-versus-delivered reports.",
-
   "plans.title": "Accommodation plans",
   "plans.for": "Accommodation plans for {name}",
   "plans.link": "View accommodation plans and provision",
@@ -284,7 +260,6 @@
   "type.assistive_tech": "Assistive technology",
   "type.physical_access": "Physical access",
   "type.transport": "Transport",
-
   "provision.log.title": "Log a provision: {type}",
   "provision.log.submit": "Log provision",
   "field.provided_on": "Date provided",
@@ -294,7 +269,6 @@
   "provision.date": "Date",
   "provision.staff": "Staff member",
   "provision.notes": "Notes",
-
   "summary.title": "Planned versus delivered",
   "summary.term": "Term",
   "summary.show": "Show term",
@@ -305,14 +279,12 @@
   "summary.shortfall": "Shortfall",
   "summary.na": "Not counted",
   "summary.empty": "No plan was in force during this term.",
-
   "overdue.title": "Overdue provisions",
   "overdue.caption": "Accommodations past their planned interval",
   "overdue.none": "Nothing is overdue.",
   "overdue.student": "Student",
   "overdue.due": "Was due",
   "overdue.days": "Days overdue",
-
   "terms.title": "Academic terms",
   "terms.caption": "Defined terms",
   "terms.none": "No terms have been defined yet.",
@@ -321,7 +293,6 @@
   "terms.added": "Term added.",
   "field.name": "Term name",
   "hint.name": "For example: Monsoon semester 2026.",
-
   "nav.compliance": "Compliance",
   "dashboard.compliance": "The statutory compliance checklist, its status summary and evidence.",
   "compliance.title": "Compliance checklist",
@@ -377,7 +348,6 @@
   "field.reason": "Reason",
   "hint.reason": "Required unless the status is Compliant.",
   "error.rule.reason": "Enter a reason",
-
   "nav.approvals": "Approvals",
   "nav.audit": "Audit log",
   "dashboard.approvals": "Accommodation plans waiting for a decision.",
@@ -404,7 +374,6 @@
   "plans.revise": "Create a new version of plan {id}",
   "plans.end": "End plan {id}",
   "plans.ended": "The plan has been ended.",
-
   "audit.title": "Audit log",
   "audit.intro": "A permanent record of every create, update and delete. Entries cannot be edited or deleted by anyone, including administrators. Values of encrypted fields are never recorded.",
   "audit.filter": "Record type",
@@ -584,5 +553,16 @@
   "error.not_authenticated": "Your session has ended. Sign in again.",
   "error.not_found": "That record no longer exists.",
   "error.api_unreachable": "The service is not responding. Try again in a moment.",
-  "error.unexpected": "Something went wrong. Try again."
+  "error.unexpected": "Something went wrong. Try again.",
+  "home.badge": "Built to WCAG 2.1 Level AA",
+  "home.track": "Track a grievance",
+  "home.f1.title": "Accommodation plans",
+  "home.f1.text": "Record what each student needs, get it approved with a logged decision, and keep every version.",
+  "home.f2.title": "Compliance, on time",
+  "home.f2.text": "Statutory obligations with reminders seven days before they fall due.",
+  "home.f3.title": "Grievances you can follow",
+  "home.f3.text": "Raise one anonymously or by name, and track it with a reference. No sign-in needed.",
+  "home.v1": "Plan approved by the nodal officer",
+  "home.v2": "Compliance report due in 7 days",
+  "home.v3": "Grievance received and being reviewed"
 }
